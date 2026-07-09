@@ -1,0 +1,85 @@
+from django.contrib.auth import authenticate
+
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from .services import AuthService
+
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from .serializers import LoginSerializer
+
+
+class LoginView(APIView):
+
+    permission_classes = []
+
+    def post(self, request):
+
+        serializer = LoginSerializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+
+        username = serializer.validated_data["username"]
+        password = serializer.validated_data["password"]
+
+        user = authenticate(
+            username=username,
+            password=password
+        )
+
+        if not user:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Username atau password salah."
+                },
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+
+            "success": True,
+
+            "message": "Login berhasil",
+
+            "access": str(refresh.access_token),
+
+            "refresh": str(refresh),
+
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+            }
+
+        })
+
+class ProfileView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        data = AuthService.profile(request.user)
+
+        if data is None:
+
+            return Response(
+                {
+                    "success": False,
+                    "message": "Data karyawan tidak ditemukan."
+                },
+                status=404
+            )
+
+        return Response(
+            {
+                "success": True,
+                "message": "Profile berhasil diambil.",
+                "data": data
+            }
+        )
