@@ -57,6 +57,11 @@ urlpatterns = [
     "recognition/",
     include("apps.recognition.urls"),
     ),
+    
+    path(
+    "attendance/",
+    include("apps.attendance.urls"),
+    ),
 
 ]
 

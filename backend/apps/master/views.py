@@ -8,7 +8,7 @@ from .serializers import HolidaySerializer
 
 
 class ShiftViewSet(viewsets.ReadOnlyModelViewSet):
-
+    
     queryset = Shift.objects.filter(
         aktif=True
     )

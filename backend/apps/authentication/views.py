@@ -4,11 +4,13 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from .services import AuthService
 
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .serializers import LoginSerializer
+from .services import AuthService
+
+from apps.common.permissions import IsAdminGroup
 
 
 class LoginView(APIView):
@@ -17,9 +19,13 @@ class LoginView(APIView):
 
     def post(self, request):
 
-        serializer = LoginSerializer(data=request.data)
+        serializer = LoginSerializer(
+            data=request.data
+        )
 
-        serializer.is_valid(raise_exception=True)
+        serializer.is_valid(
+            raise_exception=True
+        )
 
         username = serializer.validated_data["username"]
         password = serializer.validated_data["password"]
@@ -29,7 +35,8 @@ class LoginView(APIView):
             password=password
         )
 
-        if not user:
+        if user is None:
+
             return Response(
                 {
                     "success": False,
@@ -40,20 +47,39 @@ class LoginView(APIView):
 
         refresh = RefreshToken.for_user(user)
 
+        groups = list(
+            user.groups.values_list(
+                "name",
+                flat=True
+            )
+        )
+
         return Response({
 
             "success": True,
 
-            "message": "Login berhasil",
+            "message": "Login berhasil.",
 
             "access": str(refresh.access_token),
 
             "refresh": str(refresh),
 
             "user": {
+
                 "id": user.id,
+
                 "username": user.username,
+
                 "email": user.email,
+
+                "is_active": user.is_active,
+
+                "is_staff": user.is_staff,
+
+                "is_superuser": user.is_superuser,
+
+                "groups": groups,
+
             }
 
         })

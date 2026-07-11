@@ -1,18 +1,18 @@
 from django.db import models
 
 from apps.employees.models import Employee
-
 from apps.offices.models import Office
 
 
 class Attendance(models.Model):
 
     STATUS = (
-        ('hadir', 'Hadir'),
-        ('terlambat', 'Terlambat'),
-        ('izin', 'Izin'),
-        ('sakit', 'Sakit'),
-        ('alpa', 'Alpa'),
+        ("hadir", "Hadir"),
+        ("terlambat", "Terlambat"),
+        ("izin", "Izin"),
+        ("sakit", "Sakit"),
+        ("cuti", "Cuti"),
+        ("alpa", "Alpa"),
     )
 
     employee = models.ForeignKey(
@@ -53,6 +53,10 @@ class Attendance(models.Model):
         upload_to="attendance/"
     )
 
+    face_score = models.FloatField(
+        default=0
+    )
+
     status = models.CharField(
         max_length=20,
         choices=STATUS
@@ -65,6 +69,10 @@ class Attendance(models.Model):
 
     created_at = models.DateTimeField(
         auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
     )
 
     class Meta:

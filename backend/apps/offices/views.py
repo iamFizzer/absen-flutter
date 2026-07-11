@@ -6,5 +6,6 @@ from .serializers import OfficeSerializer
 
 
 class OfficeViewSet(viewsets.ModelViewSet):
+    
     queryset = Office.objects.all()
     serializer_class = OfficeSerializer

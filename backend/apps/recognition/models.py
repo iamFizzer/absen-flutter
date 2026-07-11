@@ -1,7 +1,6 @@
 from django.db import models
 from apps.employees.models import Employee
 
-
 class FaceData(models.Model):
 
     employee = models.OneToOneField(
@@ -19,6 +18,10 @@ class FaceData(models.Model):
         null=True
     )
 
+    is_active = models.BooleanField(
+        default=True
+    )
+
     created_at = models.DateTimeField(
         auto_now_add=True
     )
@@ -26,9 +29,3 @@ class FaceData(models.Model):
     updated_at = models.DateTimeField(
         auto_now=True
     )
-
-    class Meta:
-        db_table = "face_data"
-
-    def __str__(self):
-        return self.employee.nama
