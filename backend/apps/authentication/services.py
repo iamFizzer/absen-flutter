@@ -13,43 +13,40 @@ class AuthService:
         if employee is None:
             return None
 
-        foto = None
-
-        if employee.foto:
-            foto = employee.foto.url
+        # Role
+        if user.is_superuser:
+            role = "superadmin"
+        elif user.is_staff:
+            role = "admin"
+        else:
+            role = "pegawai"
 
         return {
 
-            "user": {
+            "id": user.id,
 
-                "id": user.id,
+            "username": user.username,
 
-                "username": user.username,
+            "email": user.email,
 
-                "email": user.email,
+            "role": role,
 
-            },
+            "employee_id": employee.id,
 
-            "employee": {
+            "nip": employee.nip,
 
-                "id": employee.id,
+            "nama": employee.nama,
 
-                "nip": employee.nip,
+            "jabatan": employee.jabatan,
 
-                "nama": employee.nama,
+            "jenis_kelamin": employee.jenis_kelamin,
 
-                "jabatan": employee.jabatan,
+            "telepon": employee.telepon,
 
-                "jenis_kelamin": employee.jenis_kelamin,
+            "employee_email": employee.email,
 
-                "telepon": employee.telepon,
+            "status": employee.status,
 
-                "email": employee.email,
-
-                "status": employee.status,
-
-                "foto": foto,
-
-            }
+            "foto": employee.foto.url if employee.foto else None,
 
         }
