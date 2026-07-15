@@ -5,6 +5,11 @@ import '../../modules/auth/views/login_page.dart';
 
 import '../../modules/splash/bindings/splash_binding.dart';
 import '../../modules/splash/views/splash_page.dart';
+import '../../modules/dashboard/bindings/dashboard_binding.dart';
+import '../../modules/dashboard/views/dashboard_page.dart';
+
+import '../../modules/attendance/bindings/attendance_binding.dart';
+import '../../modules/attendance/views/attendance_page.dart';
 
 import 'app_routes.dart';
 
@@ -32,6 +37,21 @@ class AppPages {
 
     ),
 
+    GetPage(
+
+      name: AppRoutes.dashboard,
+
+      page: () => const DashboardPage(),
+
+      binding: DashboardBinding(),
+
+    ),
+
+    GetPage(
+      name: AppRoutes.attendance,
+      page: () => const AttendancePage(),
+      binding: AttendanceBinding(),
+    ),
   ];
 
 }

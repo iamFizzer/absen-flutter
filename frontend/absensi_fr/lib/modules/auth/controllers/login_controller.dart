@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/auth_service.dart';
+import '../../../core/routes/app_routes.dart';
+import '../../../core/session/session_service.dart';
 
 class LoginController extends GetxController {
   /// Form Controller
@@ -38,15 +40,15 @@ class LoginController extends GetxController {
   );
 
   isLoading.value = false;
-
   if (result["success"] == true) {
+    final user = await SessionService.getUser();
 
-    Get.snackbar(
-    "Berhasil",
-    result["message"] ?? "Login berhasil",
+    print(user?.nama);
+    print(user?.role);
+
+    Get.offAllNamed(
+      AppRoutes.dashboard,
     );
-
-    // nanti pindah Dashboard
 
   } else {
 

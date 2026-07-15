@@ -1,64 +1,32 @@
 from rest_framework import serializers
-from .models import Attendance
 
 
-class AttendanceSerializer(serializers.ModelSerializer):
+class AttendanceTodaySerializer(serializers.Serializer):
 
-    employee_name = serializers.CharField(
-        source="employee.nama",
-        read_only=True
+    tanggal = serializers.DateField()
+
+    office = serializers.CharField()
+
+    office_latitude = serializers.FloatField()
+
+    office_longitude = serializers.FloatField()
+
+    radius = serializers.IntegerField()
+
+    jam_masuk = serializers.TimeField(
+        allow_null=True
     )
 
-    office_name = serializers.CharField(
-        source="office.nama",
-        read_only=True
+    jam_pulang = serializers.TimeField(
+        allow_null=True
     )
 
-    class Meta:
-        model = Attendance
-        fields = "__all__"
-
-class CheckInSerializer(serializers.Serializer):
-
-    latitude = serializers.DecimalField(
-        max_digits=10,
-        decimal_places=7
+    check_in = serializers.TimeField(
+        allow_null=True
     )
 
-    longitude = serializers.DecimalField(
-        max_digits=10,
-        decimal_places=7
+    check_out = serializers.TimeField(
+        allow_null=True
     )
 
-    image = serializers.ImageField()
-
-class AttendanceHistorySerializer(serializers.ModelSerializer):
-
-    office = serializers.CharField(
-        source="office.nama",
-        read_only=True
-    )
-
-    class Meta:
-
-        model = Attendance
-
-        fields = (
-
-            "id",
-
-            "tanggal",
-
-            "jam_masuk",
-
-            "jam_pulang",
-
-            "status",
-
-            "jarak",
-
-            "office",
-
-            "catatan",
-
-        )
+    status = serializers.CharField()

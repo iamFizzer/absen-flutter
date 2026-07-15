@@ -7,52 +7,32 @@ from apps.attendance.models import Attendance
 class DashboardService:
 
     @staticmethod
-    def get_dashboard(user):
-
-        employee = Employee.objects.filter(
-            user=user
-        ).select_related("office").first()
-
-        if employee is None:
-            return None
-
-        attendance = Attendance.objects.filter(
-            employee=employee,
-            tanggal=date.today()
-        ).first()
+    def dashboard(user):
 
         return {
 
-            "employee": {
+            "nama": "Rena Wijaya",
 
-                "id": employee.id,
+            "jabatan": "STAFF IT",
 
-                "nip": employee.nip,
+            "shift": "PAGI",
 
-                "nama": employee.nama,
+            "jam_masuk": "08:00",
 
-                "jabatan": employee.jabatan,
+            "jam_pulang": "16:00",
 
-            },
+            "check_in": None,
 
-            "office": {
+            "check_out": None,
 
-                "id": employee.office.id,
+            "status": "Belum Check In",
 
-                "nama": employee.office.nama,
+            "total_pegawai": 25,
 
-                "radius": employee.office.radius,
+            "total_kantor": 2,
 
-            },
+            "total_presensi": 18,
 
-            "attendance": {
-
-                "today": attendance is not None,
-
-                "check_in": attendance.jam_masuk if attendance else None,
-
-                "check_out": attendance.jam_pulang if attendance else None,
-
-            }
+            "total_terlambat": 1,
 
         }

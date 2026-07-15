@@ -8,6 +8,8 @@ class ApiEndpoint {
   static const dashboard = "/dashboard/";
 
   static const attendance = "/attendance/";
+  
+  static const attendanceToday = "attendance/today/";
 
   static const employee = "/employees/";
 

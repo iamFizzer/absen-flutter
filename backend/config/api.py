@@ -8,7 +8,6 @@ from rest_framework_simplejwt.views import (
 
 from apps.employees.views import EmployeeViewSet
 from apps.offices.views import OfficeViewSet
-from apps.attendance.views import AttendanceViewSet
 from apps.master.views import ShiftViewSet
 from apps.master.views import HolidayViewSet
 
@@ -16,7 +15,6 @@ router = DefaultRouter()
 
 router.register(r'employees', EmployeeViewSet, basename='employees')
 router.register(r'offices', OfficeViewSet, basename='offices')
-router.register(r'attendance', AttendanceViewSet, basename='attendance')
 router.register(
     r'master/shifts',
     ShiftViewSet,

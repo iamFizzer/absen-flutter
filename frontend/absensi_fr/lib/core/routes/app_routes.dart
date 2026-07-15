@@ -6,4 +6,5 @@ abstract class AppRoutes {
 
   static const dashboard = "/dashboard";
 
+  static const attendance = "/attendance";
 }
