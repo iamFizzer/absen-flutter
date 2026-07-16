@@ -1,5 +1,4 @@
 abstract class AppRoutes {
-
   static const splash = "/";
 
   static const login = "/login";
@@ -7,4 +6,6 @@ abstract class AppRoutes {
   static const dashboard = "/dashboard";
 
   static const attendance = "/attendance";
+
+  static const adminDashboard = "/admin-dashboard";
 }

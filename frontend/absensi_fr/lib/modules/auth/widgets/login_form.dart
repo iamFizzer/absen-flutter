@@ -6,22 +6,18 @@ import '../controllers/login_controller.dart';
 class LoginForm extends StatelessWidget {
   const LoginForm({super.key});
 
-
   @override
   Widget build(BuildContext context) {
-  final LoginController controller = Get.find<LoginController>();
+    final LoginController controller = Get.find<LoginController>();
     return Column(
       children: [
-
         // Username / NIP
         TextField(
           controller: controller.usernameController,
           decoration: InputDecoration(
             hintText: "NIP Pegawai",
             prefixIcon: const Icon(Icons.badge_outlined),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
           ),
         ),
 
@@ -52,24 +48,14 @@ class LoginForm extends StatelessWidget {
 
         const SizedBox(height: 10),
 
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: () {},
-            child: const Text("Lupa Password?"),
-          ),
-        ),
-
-        const SizedBox(height: 15),
+        const SizedBox(height: 22),
 
         Obx(
           () => SizedBox(
             width: double.infinity,
             height: 52,
-            child: ElevatedButton(
-              onPressed: controller.isLoading.value
-                  ? null
-                  : controller.login,
+            child: FilledButton(
+              onPressed: controller.isLoading.value ? null : controller.login,
               child: controller.isLoading.value
                   ? const SizedBox(
                       width: 22,
@@ -79,11 +65,10 @@ class LoginForm extends StatelessWidget {
                         color: Colors.white,
                       ),
                     )
-                  : const Text("MASUK SEKARANG"),
+                  : const Text("MASUK"),
             ),
           ),
         ),
-
       ],
     );
   }

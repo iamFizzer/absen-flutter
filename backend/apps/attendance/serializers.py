@@ -1,6 +1,12 @@
 from rest_framework import serializers
 
 
+class AttendanceSubmitSerializer(serializers.Serializer):
+    latitude = serializers.DecimalField(max_digits=10, decimal_places=7)
+    longitude = serializers.DecimalField(max_digits=10, decimal_places=7)
+    selfie = serializers.ImageField()
+
+
 class AttendanceTodaySerializer(serializers.Serializer):
 
     tanggal = serializers.DateField()

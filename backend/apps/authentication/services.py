@@ -6,6 +6,15 @@ class AuthService:
     @staticmethod
     def profile(user):
 
+        if user.is_superuser or user.is_staff:
+            return {
+                "id": user.id, "username": user.username,
+                "email": user.email or "", "role": "superadmin" if user.is_superuser else "admin",
+                "employee_id": None, "nip": "", "nama": user.get_full_name() or user.username,
+                "jabatan": "Administrator", "jenis_kelamin": "", "telepon": "",
+                "employee_email": user.email or None, "status": "aktif", "foto": None,
+            }
+
         employee = Employee.objects.filter(
             user=user
         ).first()
@@ -13,13 +22,7 @@ class AuthService:
         if employee is None:
             return None
 
-        # Role
-        if user.is_superuser:
-            role = "superadmin"
-        elif user.is_staff:
-            role = "admin"
-        else:
-            role = "pegawai"
+        role = "pegawai"
 
         return {
 

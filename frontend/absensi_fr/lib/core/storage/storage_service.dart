@@ -41,60 +41,43 @@ class StorageService {
   /// GENERIC STORAGE
   /// ===========================
 
-  static Future<void> setString(
-    String key,
-    String value,
-  ) async {
+  static Future<void> setString(String key, String value) async {
     final pref = await SharedPreferences.getInstance();
 
     await pref.setString(key, value);
   }
 
-  static Future<String?> getString(
-    String key,
-  ) async {
+  static Future<String?> getString(String key) async {
     final pref = await SharedPreferences.getInstance();
 
     return pref.getString(key);
   }
 
-  static Future<void> setBool(
-    String key,
-    bool value,
-  ) async {
+  static Future<void> setBool(String key, bool value) async {
     final pref = await SharedPreferences.getInstance();
 
     await pref.setBool(key, value);
   }
 
-  static Future<bool?> getBool(
-    String key,
-  ) async {
+  static Future<bool?> getBool(String key) async {
     final pref = await SharedPreferences.getInstance();
 
     return pref.getBool(key);
   }
 
-  static Future<void> setInt(
-    String key,
-    int value,
-  ) async {
+  static Future<void> setInt(String key, int value) async {
     final pref = await SharedPreferences.getInstance();
 
     await pref.setInt(key, value);
   }
 
-  static Future<int?> getInt(
-    String key,
-  ) async {
+  static Future<int?> getInt(String key) async {
     final pref = await SharedPreferences.getInstance();
 
     return pref.getInt(key);
   }
 
-  static Future<void> remove(
-    String key,
-  ) async {
+  static Future<void> remove(String key) async {
     final pref = await SharedPreferences.getInstance();
 
     await pref.remove(key);

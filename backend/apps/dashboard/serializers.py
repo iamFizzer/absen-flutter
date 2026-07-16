@@ -2,31 +2,14 @@ from rest_framework import serializers
 
 
 class DashboardSerializer(serializers.Serializer):
-
     nama = serializers.CharField()
-
     jabatan = serializers.CharField()
-
+    office = serializers.CharField()
     shift = serializers.CharField()
-
-    jam_masuk = serializers.CharField()
-
-    jam_pulang = serializers.CharField()
-
-    check_in = serializers.CharField(
-        allow_null=True,
-    )
-
-    check_out = serializers.CharField(
-        allow_null=True,
-    )
-
+    jam_masuk = serializers.TimeField(allow_null=True, format="%H:%M")
+    jam_pulang = serializers.TimeField(allow_null=True, format="%H:%M")
+    check_in = serializers.TimeField(allow_null=True, format="%H:%M")
+    check_out = serializers.TimeField(allow_null=True, format="%H:%M")
     status = serializers.CharField()
-
-    total_pegawai = serializers.IntegerField()
-
-    total_kantor = serializers.IntegerField()
-
-    total_presensi = serializers.IntegerField()
-
-    total_terlambat = serializers.IntegerField()
+    hadir_bulan_ini = serializers.IntegerField()
+    terlambat_bulan_ini = serializers.IntegerField()

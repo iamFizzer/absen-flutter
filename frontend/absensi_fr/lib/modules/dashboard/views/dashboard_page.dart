@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../core/routes/app_routes.dart';
 
+import '../../../core/routes/app_routes.dart';
+import '../../../core/session/session_service.dart';
+import '../../../core/theme/app_color.dart';
 import '../controllers/dashboard_controller.dart';
+import '../models/dashboard_model.dart';
 import '../widgets/dashboard_header.dart';
-import '../widgets/dashboard_menu_item.dart';
 import '../widgets/dashboard_stat_card.dart';
 
 class DashboardPage extends GetView<DashboardController> {
@@ -14,164 +16,349 @@ class DashboardPage extends GetView<DashboardController> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Obx(() {
-
-        /// Loading
-        if (controller.isLoading.value) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+        if (controller.isLoading.value && controller.dashboard.value == null) {
+          return const Center(child: CircularProgressIndicator());
         }
+        final data = controller.dashboard.value;
+        if (data == null) return _ErrorState(onRetry: controller.loadDashboard);
 
-        /// Data tidak ada
-        if (controller.dashboard.value == null) {
-          return const Center(
-            child: Text("Dashboard tidak dapat dimuat"),
-          );
-        }
-
-        final dashboard = controller.dashboard.value!;
-
-        return SingleChildScrollView(
-          child: Column(
-            children: [
-
-              /// Header
-              DashboardHeader(
-                nama: dashboard.nama,
-                jabatan: dashboard.jabatan,
-              ),
-
-              const SizedBox(height: 25),
-
-              /// Statistik
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 15,
-                  mainAxisSpacing: 15,
-                  childAspectRatio: 1.4,
-                  children: [
-
-                    DashboardStatCard(
-                      title: "Pegawai",
-                      value: dashboard.totalPegawai.toString(),
-                      icon: Icons.people_alt,
-                      color: Colors.blue,
-                    ),
-
-                    DashboardStatCard(
-                      title: "Kantor",
-                      value: dashboard.totalKantor.toString(),
-                      icon: Icons.business,
-                      color: Colors.orange,
-                    ),
-
-                    DashboardStatCard(
-                      title: "Presensi",
-                      value: dashboard.totalPresensi.toString(),
-                      icon: Icons.calendar_month,
-                      color: Colors.green,
-                    ),
-
-                    DashboardStatCard(
-                      title: "Terlambat",
-                      value: dashboard.totalTerlambat.toString(),
-                      icon: Icons.warning_amber,
-                      color: Colors.red,
-                    ),
-
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              /// Judul Menu
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Menu",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+        return RefreshIndicator(
+          onRefresh: controller.refreshDashboard,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth >= 760;
+              return CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: DashboardHeader(
+                      nama: data.nama,
+                      jabatan: data.jabatan,
+                      onLogout: () => _logout(context),
                     ),
                   ),
-                ),
-              ),
-
-              const SizedBox(height: 15),
-
-              /// Menu
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: GridView.count(
-                  crossAxisCount: 3,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 15,
-                  mainAxisSpacing: 15,
-                  childAspectRatio: .9,
-                  children: [
-
-                    DashboardMenuItem(
-                      title: "Pegawai",
-                      icon: Icons.people,
-                      color: Colors.blue,
-                      onTap: () {},
+                  SliverPadding(
+                    padding: EdgeInsets.fromLTRB(
+                      wide ? 40 : 20,
+                      24,
+                      wide ? 40 : 20,
+                      40,
                     ),
-
-                    DashboardMenuItem(
-                      title: "Kantor",
-                      icon: Icons.business,
-                      color: Colors.orange,
-                      onTap: () {},
+                    sliver: SliverToBoxAdapter(
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1050),
+                          child: wide
+                              ? Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      flex: 6,
+                                      child: _TodayCard(data: data),
+                                    ),
+                                    const SizedBox(width: 20),
+                                    Expanded(
+                                      flex: 4,
+                                      child: _Summary(data: data),
+                                    ),
+                                  ],
+                                )
+                              : Column(
+                                  children: [
+                                    _TodayCard(data: data),
+                                    const SizedBox(height: 20),
+                                    _Summary(data: data),
+                                  ],
+                                ),
+                        ),
+                      ),
                     ),
-
-                    DashboardMenuItem(
-                      title: "Presensi",
-                      icon: Icons.fingerprint,
-                      color: Colors.green,
-                      onTap: () {
-                        Get.toNamed(AppRoutes.attendance);
-                      },
-                    ),
-
-                    DashboardMenuItem(
-                      title: "Riwayat",
-                      icon: Icons.history,
-                      color: Colors.purple,
-                      onTap: () {},
-                    ),
-
-                    DashboardMenuItem(
-                      title: "Profile",
-                      icon: Icons.person,
-                      color: Colors.teal,
-                      onTap: () {},
-                    ),
-
-                    DashboardMenuItem(
-                      title: "Setting",
-                      icon: Icons.settings,
-                      color: Colors.red,
-                      onTap: () {},
-                    ),
-
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-            ],
+                  ),
+                ],
+              );
+            },
           ),
         );
       }),
     );
   }
+
+  Future<void> _logout(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Keluar dari akun?'),
+        content: const Text(
+          'Anda perlu masuk kembali untuk melakukan presensi.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Keluar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await SessionService.logout();
+      Get.offAllNamed(AppRoutes.login);
+    }
+  }
+}
+
+class _TodayCard extends StatelessWidget {
+  final DashboardModel data;
+  const _TodayCard({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final complete = data.status == 'selesai';
+    final checkedIn = data.checkIn != null;
+    final title = complete
+        ? 'Presensi selesai'
+        : checkedIn
+        ? 'Saatnya check-out'
+        : 'Siap untuk presensi?';
+    final subtitle = complete
+        ? 'Terima kasih, aktivitas hari ini sudah tercatat.'
+        : 'Pastikan wajah terlihat jelas dan GPS perangkat aktif.';
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(11),
+                  decoration: BoxDecoration(
+                    color: AppColor.primarySoft,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(
+                    Icons.verified_user_outlined,
+                    color: AppColor.primary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        subtitle,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _InfoChip(icon: Icons.business_outlined, label: data.office),
+                _InfoChip(
+                  icon: Icons.schedule,
+                  label:
+                      '${data.shift} • ${data.jamMasuk ?? '--:--'}–${data.jamPulang ?? '--:--'}',
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: _TimeItem(
+                    label: 'Check-in',
+                    value: data.checkIn ?? '--:--',
+                    icon: Icons.login_rounded,
+                  ),
+                ),
+                Container(width: 1, height: 54, color: AppColor.border),
+                Expanded(
+                  child: _TimeItem(
+                    label: 'Check-out',
+                    value: data.checkOut ?? '--:--',
+                    icon: Icons.logout_rounded,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: complete
+                    ? null
+                    : () async {
+                        await Get.toNamed(AppRoutes.attendance);
+                        await Get.find<DashboardController>()
+                            .refreshDashboard();
+                      },
+                icon: Icon(
+                  checkedIn
+                      ? Icons.logout_rounded
+                      : Icons.face_retouching_natural,
+                ),
+                label: Text(
+                  complete
+                      ? 'PRESENSI HARI INI SELESAI'
+                      : checkedIn
+                      ? 'LANJUT CHECK-OUT'
+                      : 'MULAI PRESENSI',
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Summary extends StatelessWidget {
+  final DashboardModel data;
+  const _Summary({required this.data});
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        'Ringkasan bulan ini',
+        style: Theme.of(context).textTheme.titleLarge,
+      ),
+      const SizedBox(height: 12),
+      Row(
+        children: [
+          Expanded(
+            child: DashboardStatCard(
+              title: 'Kehadiran',
+              value: '${data.hadirBulanIni}',
+              icon: Icons.calendar_month_outlined,
+              color: AppColor.success,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: DashboardStatCard(
+              title: 'Terlambat',
+              value: '${data.terlambatBulanIni}',
+              icon: Icons.timer_outlined,
+              color: AppColor.warning,
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 16),
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              const Icon(Icons.shield_outlined, color: AppColor.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Presensi divalidasi dengan kecocokan wajah dan lokasi perangkat.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+class _InfoChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _InfoChip({required this.icon, required this.label});
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+    decoration: BoxDecoration(
+      color: AppColor.surfaceMuted,
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 17, color: AppColor.textMuted),
+        const SizedBox(width: 7),
+        Text(label),
+      ],
+    ),
+  );
+}
+
+class _TimeItem extends StatelessWidget {
+  final String label, value;
+  final IconData icon;
+  const _TimeItem({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      Icon(icon, color: AppColor.primary, size: 21),
+      const SizedBox(height: 6),
+      Text(value, style: Theme.of(context).textTheme.titleLarge),
+      Text(label, style: Theme.of(context).textTheme.bodySmall),
+    ],
+  );
+}
+
+class _ErrorState extends StatelessWidget {
+  final VoidCallback onRetry;
+  const _ErrorState({required this.onRetry});
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.cloud_off_outlined,
+            size: 48,
+            color: AppColor.textMuted,
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Dashboard tidak dapat dimuat',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Periksa koneksi ke server lalu coba kembali.',
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 18),
+          FilledButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Coba lagi'),
+          ),
+        ],
+      ),
+    ),
+  );
 }

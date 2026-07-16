@@ -7,21 +7,16 @@ class DashboardService {
 
   static Future<DashboardModel?> getDashboard() async {
     try {
-      final response = await ApiClient.dio.get(
-        ApiEndpoint.dashboard,
-      );
+      final response = await ApiClient.dio.get(ApiEndpoint.dashboard);
 
       final data = response.data;
 
       if (data["success"] == true) {
-        return DashboardModel.fromJson(
-          data["data"],
-        );
+        return DashboardModel.fromJson(data["data"]);
       }
 
       return null;
-    } catch (e) {
-      print(e);
+    } catch (_) {
       return null;
     }
   }

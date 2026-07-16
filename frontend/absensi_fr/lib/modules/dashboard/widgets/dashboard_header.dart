@@ -1,127 +1,90 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_color.dart';
+import '../../../core/widgets/live_clock.dart';
 
 class DashboardHeader extends StatelessWidget {
-
   final String nama;
   final String jabatan;
-
+  final VoidCallback onLogout;
   const DashboardHeader({
     super.key,
     required this.nama,
     required this.jabatan,
+    required this.onLogout,
   });
 
   @override
-  Widget build(BuildContext context) {
-
-    return Container(
-
-      width: double.infinity,
-
-      padding: const EdgeInsets.all(24),
-
-      decoration: const BoxDecoration(
-
-        color: Color(0xff0F4C81),
-
-        borderRadius: BorderRadius.only(
-
-          bottomLeft: Radius.circular(30),
-
-          bottomRight: Radius.circular(30),
-
-        ),
-
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        colors: [AppColor.primaryDark, AppColor.primary],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
       ),
-
-      child: SafeArea(
-
-        child: Column(
-
-          crossAxisAlignment: CrossAxisAlignment.start,
-
-          children: [
-
-            Row(
-
+      borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+    ),
+    child: SafeArea(
+      bottom: false,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1100),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(22, 20, 16, 26),
+            child: Row(
               children: [
-
-                const Icon(
-                  Icons.menu,
-                  color: Colors.white,
-                ),
-
-                const Spacer(),
-
-                IconButton(
-
-                  onPressed: () {},
-
-                  icon: const Icon(
-                    Icons.notifications_none,
-                    color: Colors.white,
+                Container(
+                  width: 48,
+                  height: 48,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: .15),
+                    borderRadius: BorderRadius.circular(15),
                   ),
-
+                  child: Text(
+                    nama.isEmpty ? '?' : nama[0].toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 21,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
-
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Halo, $nama',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 21,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        jabatan,
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                    ],
+                  ),
+                ),
+                const LiveClock(color: Colors.white, compact: true),
+                const SizedBox(width: 8),
+                IconButton.filledTonal(
+                  onPressed: onLogout,
+                  tooltip: 'Keluar',
+                  icon: const Icon(Icons.logout_rounded),
+                ),
               ],
-
             ),
-
-            const SizedBox(height: 20),
-
-            const Text(
-
-              "Selamat Datang",
-
-              style: TextStyle(
-
-                color: Colors.white70,
-
-                fontSize: 16,
-
-              ),
-
-            ),
-
-            const SizedBox(height: 8),
-
-            Text(
-
-              nama,
-
-              style: const TextStyle(
-
-                color: Colors.white,
-
-                fontSize: 24,
-
-                fontWeight: FontWeight.bold,
-
-              ),
-
-            ),
-
-            Text(
-
-              jabatan,
-
-              style: const TextStyle(
-
-                color: Colors.white70,
-
-              ),
-
-            ),
-
-          ],
-
+          ),
         ),
-
       ),
-
-    );
-
-  }
-
+    ),
+  );
 }

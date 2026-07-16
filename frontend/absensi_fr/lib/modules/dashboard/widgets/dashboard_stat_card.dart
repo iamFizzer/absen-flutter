@@ -16,73 +16,35 @@ class DashboardStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
 
-    return Container(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
 
-      padding: const EdgeInsets.all(18),
+          children: [
+            CircleAvatar(
+              radius: 22,
 
-      decoration: BoxDecoration(
+              backgroundColor: color.withValues(alpha: .15),
 
-        color: Colors.white,
+              child: Icon(icon, color: color),
+            ),
 
-        borderRadius: BorderRadius.circular(18),
+            const SizedBox(height: 14),
 
-        boxShadow: const [
+            Text(
+              value,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
 
-          BoxShadow(
-            color: Color(0x11000000),
-            blurRadius: 10,
-            offset: Offset(0,5),
-          ),
+            const SizedBox(height: 5),
 
-        ],
-
+            Text(title, style: TextStyle(color: Colors.grey.shade600)),
+          ],
+        ),
       ),
-
-      child: Column(
-
-        crossAxisAlignment: CrossAxisAlignment.start,
-
-        children: [
-
-          CircleAvatar(
-
-            radius: 22,
-
-            backgroundColor: color.withOpacity(.15),
-
-            child: Icon(
-              icon,
-              color: color,
-            ),
-
-          ),
-
-          const SizedBox(height: 18),
-
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 5),
-
-          Text(
-            title,
-            style: TextStyle(
-              color: Colors.grey.shade600,
-            ),
-          ),
-
-        ],
-
-      ),
-
     );
-
   }
-
 }

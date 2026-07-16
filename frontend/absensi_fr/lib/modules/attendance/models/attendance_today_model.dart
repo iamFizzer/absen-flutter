@@ -1,5 +1,4 @@
 class AttendanceTodayModel {
-
   final String tanggal;
 
   final String office;
@@ -21,7 +20,6 @@ class AttendanceTodayModel {
   final String status;
 
   const AttendanceTodayModel({
-
     required this.tanggal,
 
     required this.office,
@@ -41,25 +39,17 @@ class AttendanceTodayModel {
     this.checkOut,
 
     required this.status,
-
   });
 
-  factory AttendanceTodayModel.fromJson(
-      Map<String,dynamic> json){
-
+  factory AttendanceTodayModel.fromJson(Map<String, dynamic> json) {
     return AttendanceTodayModel(
-
       tanggal: json["tanggal"],
 
       office: json["office"],
 
-      officeLatitude:
-          double.parse(
-              json["office_latitude"].toString()),
+      officeLatitude: double.parse(json["office_latitude"].toString()),
 
-      officeLongitude:
-          double.parse(
-              json["office_longitude"].toString()),
+      officeLongitude: double.parse(json["office_longitude"].toString()),
 
       radius: json["radius"],
 
@@ -72,9 +62,6 @@ class AttendanceTodayModel {
       checkOut: json["check_out"],
 
       status: json["status"],
-
     );
-
   }
-
 }

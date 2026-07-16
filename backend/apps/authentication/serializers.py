@@ -20,7 +20,7 @@ class ProfileSerializer(serializers.Serializer):
 
     role = serializers.CharField()
 
-    employee_id = serializers.IntegerField()
+    employee_id = serializers.IntegerField(allow_null=True)
 
     nip = serializers.CharField()
 

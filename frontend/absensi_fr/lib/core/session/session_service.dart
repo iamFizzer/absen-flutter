@@ -16,10 +16,7 @@ class SessionService {
   static Future<void> saveUser(UserModel user) async {
     _currentUser = user;
 
-    await StorageService.setString(
-      userKey,
-      jsonEncode(user.toJson()),
-    );
+    await StorageService.setString(userKey, jsonEncode(user.toJson()));
   }
 
   /// ===============================
@@ -36,9 +33,7 @@ class SessionService {
       return null;
     }
 
-    _currentUser = UserModel.fromJson(
-      jsonDecode(json),
-    );
+    _currentUser = UserModel.fromJson(jsonDecode(json));
 
     return _currentUser;
   }

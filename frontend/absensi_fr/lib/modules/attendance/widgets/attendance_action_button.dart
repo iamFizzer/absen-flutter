@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 class AttendanceActionButton extends StatelessWidget {
   final VoidCallback onTap;
 
-  const AttendanceActionButton({
-    super.key,
-    required this.onTap,
-  });
+  const AttendanceActionButton({super.key, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -16,12 +13,7 @@ class AttendanceActionButton extends StatelessWidget {
       child: ElevatedButton.icon(
         onPressed: onTap,
         icon: const Icon(Icons.fingerprint),
-        label: const Text(
-          "CHECK IN",
-          style: TextStyle(
-            fontSize: 18,
-          ),
-        ),
+        label: const Text("CHECK IN", style: TextStyle(fontSize: 18)),
       ),
     );
   }

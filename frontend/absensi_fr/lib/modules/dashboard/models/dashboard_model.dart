@@ -1,50 +1,43 @@
 class DashboardModel {
   final String nama;
   final String jabatan;
-
+  final String office;
   final String shift;
-  final String jamMasuk;
-  final String jamPulang;
-
+  final String? jamMasuk;
+  final String? jamPulang;
   final String? checkIn;
   final String? checkOut;
-
   final String status;
-
-  final int totalPegawai;
-  final int totalKantor;
-  final int totalPresensi;
-  final int totalTerlambat;
+  final int hadirBulanIni;
+  final int terlambatBulanIni;
 
   const DashboardModel({
     required this.nama,
     required this.jabatan,
+    required this.office,
     required this.shift,
-    required this.jamMasuk,
-    required this.jamPulang,
+    this.jamMasuk,
+    this.jamPulang,
     this.checkIn,
     this.checkOut,
     required this.status,
-    required this.totalPegawai,
-    required this.totalKantor,
-    required this.totalPresensi,
-    required this.totalTerlambat,
+    required this.hadirBulanIni,
+    required this.terlambatBulanIni,
   });
 
   factory DashboardModel.fromJson(Map<String, dynamic> json) {
     return DashboardModel(
       nama: json["nama"] ?? "",
       jabatan: json["jabatan"] ?? "",
+      office: json["office"] ?? "",
       shift: json["shift"] ?? "",
-      jamMasuk: json["jam_masuk"] ?? "",
-      jamPulang: json["jam_pulang"] ?? "",
+      jamMasuk: json["jam_masuk"],
+      jamPulang: json["jam_pulang"],
       checkIn: json["check_in"],
       checkOut: json["check_out"],
-      status: json["status"] ?? "",
-      totalPegawai: json["total_pegawai"] ?? 0,
-      totalKantor: json["total_kantor"] ?? 0,
-      totalPresensi: json["total_presensi"] ?? 0,
-      totalTerlambat: json["total_terlambat"] ?? 0,
+      status: json["status"] ?? "belum_checkin",
+      hadirBulanIni: json["hadir_bulan_ini"] ?? 0,
+      terlambatBulanIni: json["terlambat_bulan_ini"] ?? 0,
     );
   }
 }

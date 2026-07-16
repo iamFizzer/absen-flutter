@@ -4,7 +4,6 @@ import '../models/dashboard_model.dart';
 import '../services/dashboard_service.dart';
 
 class DashboardController extends GetxController {
-
   final dashboard = Rxn<DashboardModel>();
 
   final isLoading = true.obs;
@@ -17,13 +16,13 @@ class DashboardController extends GetxController {
   }
 
   Future<void> loadDashboard() async {
-
     isLoading.value = true;
-
-    dashboard.value = await DashboardService.getDashboard();
-
-    isLoading.value = false;
-
+    try {
+      dashboard.value = await DashboardService.getDashboard();
+    } finally {
+      isLoading.value = false;
+    }
   }
 
+  Future<void> refreshDashboard() => loadDashboard();
 }

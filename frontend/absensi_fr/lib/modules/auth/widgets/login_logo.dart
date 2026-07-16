@@ -7,22 +7,15 @@ class LoginLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-
-        Image.asset(
-          "assets/logo/logo-big.png",
-          width: 90,
-        ),
+        Image.asset("assets/logo/logo-big.png", width: 90),
 
         const SizedBox(height: 20),
 
         Text(
           "Selamat Datang",
-          style: Theme.of(context)
-              .textTheme
-              .headlineSmall
-              ?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
 
         const SizedBox(height: 8),

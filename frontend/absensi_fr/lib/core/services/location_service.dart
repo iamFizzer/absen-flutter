@@ -15,20 +15,17 @@ class LocationService {
       return false;
     }
 
-    LocationPermission permission =
-        await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission();
 
     if (permission == LocationPermission.denied) {
-      permission =
-          await Geolocator.requestPermission();
+      permission = await Geolocator.requestPermission();
 
       if (permission == LocationPermission.denied) {
         return false;
       }
     }
 
-    if (permission ==
-        LocationPermission.deniedForever) {
+    if (permission == LocationPermission.deniedForever) {
       return false;
     }
 
@@ -40,26 +37,23 @@ class LocationService {
   /// ============================
   static Future<LocationModel?> getCurrentLocation() async {
     try {
-      final hasPermission =
-          await checkPermission();
+      final hasPermission = await checkPermission();
 
       if (!hasPermission) {
         return null;
       }
 
-      final position =
-          await Geolocator.getCurrentPosition(
-        desiredAccuracy:
-            LocationAccuracy.high,
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
 
       return LocationModel(
         latitude: position.latitude,
         longitude: position.longitude,
       );
-    } catch (e) {
-      print(e);
-
+    } catch (_) {
       return null;
     }
   }

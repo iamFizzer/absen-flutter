@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import AttendanceTodayView
+from .views import AttendanceSubmitView, AttendanceTodayView
 
 urlpatterns = [
 
@@ -12,6 +12,12 @@ urlpatterns = [
 
         name="attendance-today",
 
+    ),
+
+    path(
+        "submit/",
+        AttendanceSubmitView.as_view(),
+        name="attendance-submit",
     ),
 
 ]

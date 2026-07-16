@@ -18,6 +18,12 @@ class DashboardView(APIView):
             request.user
         )
 
+        if dashboard is None:
+            return Response({
+                "success": False,
+                "message": "Data pegawai tidak ditemukan."
+            }, status=404)
+
         serializer = DashboardSerializer(
             dashboard
         )

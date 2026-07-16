@@ -77,6 +77,12 @@ class Attendance(models.Model):
 
     class Meta:
         db_table = "attendance"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["employee", "tanggal"],
+                name="unique_employee_attendance_date",
+            )
+        ]
 
     def __str__(self):
         return f"{self.employee.nama} - {self.tanggal}"

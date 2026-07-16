@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import '../controllers/attendance_controller.dart';
 import '../widgets/attendance_info_card.dart';
+import '../../../core/config/app_config.dart';
 
 class AttendancePage extends GetView<AttendanceController> {
   const AttendancePage({super.key});
@@ -12,23 +13,16 @@ class AttendancePage extends GetView<AttendanceController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Presensi"),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text("Presensi"), centerTitle: true),
       body: Obx(() {
         if (controller.isLoading.value) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const Center(child: CircularProgressIndicator());
         }
 
         final attendance = controller.attendance.value;
 
         if (attendance == null) {
-          return const Center(
-            child: Text("Data presensi tidak ditemukan"),
-          );
+          return const Center(child: Text("Data presensi tidak ditemukan"));
         }
 
         return SingleChildScrollView(
@@ -39,13 +33,9 @@ class AttendancePage extends GetView<AttendanceController> {
               /// ==========================
               /// PRESENSI HARI INI
               /// ==========================
-
               const Text(
                 "Presensi Hari Ini",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
 
               const SizedBox(height: 15),
@@ -97,13 +87,9 @@ class AttendancePage extends GetView<AttendanceController> {
               /// ==========================
               /// LOKASI
               /// ==========================
-
               const Text(
                 "Lokasi Saat Ini",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
 
               const SizedBox(height: 15),
@@ -115,15 +101,11 @@ class AttendancePage extends GetView<AttendanceController> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        "Latitude : ${controller.latitude.value}",
-                      ),
+                      Text("Latitude : ${controller.latitude.value}"),
 
                       const SizedBox(height: 8),
 
-                      Text(
-                        "Longitude : ${controller.longitude.value}",
-                      ),
+                      Text("Longitude : ${controller.longitude.value}"),
 
                       const SizedBox(height: 8),
 
@@ -149,7 +131,9 @@ class AttendancePage extends GetView<AttendanceController> {
                           Text(
                             controller.isInsideOffice.value
                                 ? "Dalam Radius"
-                                : "Di Luar Radius",
+                                : AppConfig.enforceAttendanceRadius
+                                ? "Di Luar Radius"
+                                : "Di Luar Radius (Mode Development)",
                             style: TextStyle(
                               color: controller.isInsideOffice.value
                                   ? Colors.green
@@ -169,52 +153,40 @@ class AttendancePage extends GetView<AttendanceController> {
               /// ==========================
               /// BUTTON
               /// ==========================
-
               Obx(() {
-
                 if (controller.photo.value == null) {
-
                   return SizedBox(
                     width: double.infinity,
                     height: 55,
                     child: ElevatedButton.icon(
-                      onPressed: controller.openCamera,
+                      onPressed: controller.canCheckIn
+                          ? controller.openCamera
+                          : null,
                       icon: const Icon(Icons.camera_alt),
-                      label: const Text(
-                        "BUKA KAMERA",
-                      ),
+                      label: const Text("BUKA KAMERA"),
                     ),
                   );
-
                 }
 
                 return Row(
-
                   children: [
-
                     Expanded(
-
                       child: OutlinedButton.icon(
-
                         onPressed: controller.retakePhoto,
 
                         icon: const Icon(Icons.refresh),
 
-                        label: const Text(
-                          "Ambil Ulang",
-                        ),
-
+                        label: const Text("Ambil Ulang"),
                       ),
-
                     ),
 
                     const SizedBox(width: 15),
 
                     Expanded(
-
                       child: ElevatedButton.icon(
-
-                        onPressed: controller.isUploading.value
+                        onPressed:
+                            controller.isUploading.value ||
+                                !controller.canCheckIn
                             ? null
                             : controller.submitAttendance,
 
@@ -230,21 +202,14 @@ class AttendancePage extends GetView<AttendanceController> {
                             : const Icon(Icons.send),
 
                         label: Text(
-
                           controller.isUploading.value
                               ? "Mengirim..."
                               : "Kirim",
-
                         ),
-
                       ),
-
                     ),
-
                   ],
-
                 );
-
               }),
 
               const SizedBox(height: 25),
@@ -252,7 +217,6 @@ class AttendancePage extends GetView<AttendanceController> {
               /// ==========================
               /// PREVIEW FOTO
               /// ==========================
-
               Obx(() {
                 final photo = controller.photo.value;
 
@@ -264,9 +228,7 @@ class AttendancePage extends GetView<AttendanceController> {
                   future: photo.readAsBytes(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
-                      return const Center(
-                        child: CircularProgressIndicator(),
-                      );
+                      return const Center(child: CircularProgressIndicator());
                     }
 
                     return Column(

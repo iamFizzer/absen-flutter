@@ -73,11 +73,16 @@ class RecognitionService:
             temp_path = temp.name
 
         try:
-
-            result = FaceUtils.verify_face(
-                face.image.path,
-                temp_path
-            )
+            try:
+                result = FaceUtils.verify_face(
+                    face.image.path,
+                    temp_path
+                )
+            except Exception:
+                return {
+                    "success": False,
+                    "message": "Wajah tidak dapat dideteksi. Ambil foto ulang dengan pencahayaan yang baik."
+                }
 
         finally:
 

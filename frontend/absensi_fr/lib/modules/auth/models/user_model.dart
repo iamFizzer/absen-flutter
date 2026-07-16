@@ -4,7 +4,7 @@ class UserModel {
   final String email;
   final String role;
 
-  final int employeeId;
+  final int? employeeId;
   final String nip;
   final String nama;
   final String jabatan;
@@ -19,7 +19,7 @@ class UserModel {
     required this.username,
     required this.email,
     required this.role,
-    required this.employeeId,
+    this.employeeId,
     required this.nip,
     required this.nama,
     required this.jabatan,

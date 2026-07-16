@@ -1,57 +1,40 @@
 import 'package:dio/dio.dart';
 
 import '../storage/storage_service.dart';
+import '../config/app_config.dart';
 
 class ApiClient {
   ApiClient._();
 
-  static final Dio dio = Dio(
-    BaseOptions(
-      baseUrl: "http://localhost:8000/api/v1/",
-      connectTimeout: const Duration(seconds: 20),
-      receiveTimeout: const Duration(seconds: 20),
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-      },
-    ),
-  )..interceptors.add(
-      InterceptorsWrapper(
+  static final Dio dio =
+      Dio(
+          BaseOptions(
+            baseUrl: AppConfig.apiBaseUrl,
+            connectTimeout: const Duration(seconds: 20),
+            sendTimeout: const Duration(seconds: 30),
+            receiveTimeout: const Duration(seconds: 60),
+            headers: {"Accept": "application/json"},
+          ),
+        )
+        ..interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) async {
+              final token = await StorageService.getAccessToken();
 
-        onRequest: (options, handler) async {
+              if (token != null && token.isNotEmpty) {
+                options.headers["Authorization"] = "Bearer $token";
+              }
 
-          final token = await StorageService.getAccessToken();
+              handler.next(options);
+            },
 
-          if (token != null && token.isNotEmpty) {
-            options.headers["Authorization"] = "Bearer $token";
-          }
+            onResponse: (response, handler) {
+              handler.next(response);
+            },
 
-          print("========== REQUEST ==========");
-          print(options.method);
-          print(options.uri);
-          print(options.headers);
-
-          handler.next(options);
-        },
-
-        onResponse: (response, handler) {
-
-          print("========== RESPONSE ==========");
-          print(response.statusCode);
-          print(response.data);
-
-          handler.next(response);
-        },
-
-        onError: (e, handler) {
-
-          print("========== ERROR ==========");
-          print(e.response?.statusCode);
-          print(e.response?.data);
-
-          handler.next(e);
-        },
-
-      ),
-    );
+            onError: (e, handler) {
+              handler.next(e);
+            },
+          ),
+        );
 }

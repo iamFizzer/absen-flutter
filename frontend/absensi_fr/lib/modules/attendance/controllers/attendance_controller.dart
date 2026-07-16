@@ -1,22 +1,18 @@
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../core/models/location_model.dart';
-import '../../../core/services/location_service.dart';
 import '../../../core/config/app_config.dart';
+import '../../../core/services/location_service.dart';
 import '../models/attendance_today_model.dart';
 import '../services/attendance_service.dart';
-import '../../../core/services/camera_service.dart';
+import '../views/camera_capture_page.dart';
 
 class AttendanceController extends GetxController {
-  
   bool get canCheckIn {
-
-  if (AppConfig.devMode) {
-    return true;
-  }
-
-  return isInsideOffice.value;
-
+    final data = attendance.value;
+    return (isInsideOffice.value || !AppConfig.enforceAttendanceRadius) &&
+        data != null &&
+        data.checkOut == null &&
+        !isLocationLoading.value;
   }
 
   final attendance = Rxn<AttendanceTodayModel>();
@@ -39,30 +35,24 @@ class AttendanceController extends GetxController {
 
   @override
   void onInit() {
-
     super.onInit();
 
     initialize();
-
   }
 
   Future<void> initialize() async {
-
     await loadAttendance();
 
     await loadLocation();
-
   }
 
   /// ==========================
   /// Attendance
   /// ==========================
   Future<void> loadAttendance() async {
-
     isLoading.value = true;
 
-    attendance.value =
-        await AttendanceService.today();
+    attendance.value = await AttendanceService.today();
 
     isLoading.value = false;
   }
@@ -71,55 +61,39 @@ class AttendanceController extends GetxController {
   /// GPS
   /// ==========================
   Future<void> loadLocation() async {
-
     isLocationLoading.value = true;
 
-    final location =
-        await LocationService.getCurrentLocation();
+    final location = await LocationService.getCurrentLocation();
 
-    if (location != null &&
-        attendance.value != null) {
-
+    if (location != null && attendance.value != null) {
       latitude.value = location.latitude;
 
       longitude.value = location.longitude;
 
-      distance.value =
-          LocationService.calculateDistance(
-
+      distance.value = LocationService.calculateDistance(
         startLatitude: latitude.value,
 
         startLongitude: longitude.value,
 
-        endLatitude:
-            attendance.value!.officeLatitude,
+        endLatitude: attendance.value!.officeLatitude,
 
-        endLongitude:
-            attendance.value!.officeLongitude,
-
+        endLongitude: attendance.value!.officeLongitude,
       );
 
-      isInsideOffice.value =
-          distance.value <=
-          attendance.value!.radius;
-
+      isInsideOffice.value = distance.value <= attendance.value!.radius;
     }
 
     isLocationLoading.value = false;
-
   }
 
   Future<void> openCamera() async {
+    final image = await Get.to<XFile>(() => const CameraCapturePage());
 
-    final image =
-        await CameraService.takePicture();
-
-    if(image==null){
+    if (image == null) {
       return;
     }
 
-    photo.value=image;
-
+    photo.value = image;
   }
 
   Future<void> retakePhoto() async {
@@ -128,24 +102,41 @@ class AttendanceController extends GetxController {
 
   Future<void> submitAttendance() async {
     if (photo.value == null) {
+      Get.snackbar("Peringatan", "Silakan ambil foto terlebih dahulu.");
+      return;
+    }
+
+    if (!canCheckIn) {
       Get.snackbar(
-        "Peringatan",
-        "Silakan ambil foto terlebih dahulu.",
+        "Presensi ditolak",
+        attendance.value?.checkOut != null
+            ? "Presensi hari ini sudah selesai."
+            : "Pastikan Anda berada di dalam radius kantor.",
       );
       return;
     }
 
     isUploading.value = true;
+    try {
+      final result = await AttendanceService.submit(
+        latitude: latitude.value,
+        longitude: longitude.value,
+        selfie: photo.value!,
+      );
 
-    await Future.delayed(
-      const Duration(seconds: 2),
-    );
-
-    isUploading.value = false;
-
-    Get.snackbar(
-      "Berhasil",
-      "Tahap selanjutnya upload ke Django",
-    );
+      if (result["success"] == true) {
+        photo.value = null;
+        await loadAttendance();
+        Get.snackbar("Berhasil", result["message"] ?? "Presensi berhasil.");
+      } else {
+        Get.snackbar(
+          "Presensi gagal",
+          result["message"] ?? "Silakan coba kembali.",
+        );
+      }
+    } finally {
+      // Spinner harus selalu berhenti, termasuk jika request melempar error.
+      isUploading.value = false;
+    }
   }
 }

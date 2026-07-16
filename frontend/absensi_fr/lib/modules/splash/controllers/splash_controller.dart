@@ -5,7 +5,6 @@ import '../../../core/session/session_service.dart';
 import '../../auth/services/auth_service.dart';
 
 class SplashController extends GetxController {
-
   @override
   void onInit() {
     super.onInit();
@@ -14,10 +13,7 @@ class SplashController extends GetxController {
   }
 
   Future<void> checkLogin() async {
-
-    await Future.delayed(
-      const Duration(seconds: 2),
-    );
+    await Future.delayed(const Duration(seconds: 2));
 
     /// cek token
     final isLogin = await SessionService.isLoggedIn();
@@ -32,7 +28,6 @@ class SplashController extends GetxController {
 
     /// kalau belum ada, ambil dari server
     if (user == null) {
-
       user = await AuthService.profile();
 
       if (user != null) {
@@ -42,15 +37,9 @@ class SplashController extends GetxController {
         Get.offAllNamed(AppRoutes.login);
         return;
       }
-
     }
 
-    print(user.nama);
-    print(user.role);
-
-    Get.offAllNamed(
-      AppRoutes.dashboard,
-    );
-
+    final isAdmin = user.role == "admin" || user.role == "superadmin";
+    Get.offAllNamed(isAdmin ? AppRoutes.adminDashboard : AppRoutes.dashboard);
   }
 }

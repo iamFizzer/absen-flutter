@@ -19,45 +19,27 @@ class LoginController extends GetxController {
   }
 
   /// Login (sementara)
- Future<void> login() async {
+  Future<void> login() async {
+    if (usernameController.text.isEmpty || passwordController.text.isEmpty) {
+      Get.snackbar("Peringatan", "Username dan Password wajib diisi");
 
-  if (usernameController.text.isEmpty ||
-      passwordController.text.isEmpty) {
+      return;
+    }
 
-    Get.snackbar(
-      "Peringatan",
-      "Username dan Password wajib diisi",
+    isLoading.value = true;
+
+    final result = await AuthService.login(
+      username: usernameController.text,
+      password: passwordController.text,
     );
 
-    return;
+    isLoading.value = false;
+    if (result["success"] == true) {
+      final user = await SessionService.getUser();
+      final isAdmin = user?.role == "admin" || user?.role == "superadmin";
+      Get.offAllNamed(isAdmin ? AppRoutes.adminDashboard : AppRoutes.dashboard);
+    } else {
+      Get.snackbar("Login Gagal", result["message"]);
+    }
   }
-
-  isLoading.value = true;
-
-  final result = await AuthService.login(
-    username: usernameController.text,
-    password: passwordController.text,
-  );
-
-  isLoading.value = false;
-  if (result["success"] == true) {
-    final user = await SessionService.getUser();
-
-    print(user?.nama);
-    print(user?.role);
-
-    Get.offAllNamed(
-      AppRoutes.dashboard,
-    );
-
-  } else {
-
-    Get.snackbar(
-      "Login Gagal",
-      result["message"],
-    );
-
-  }
- }
-
 }

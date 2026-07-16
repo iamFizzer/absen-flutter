@@ -1,3 +1,9 @@
+import os
+
+# DeepFace mencetak emoji saat mengunduh bobot model. Console Windows dengan
+# encoding legacy dapat gagal mencetaknya dan membatalkan request presensi.
+os.environ.setdefault("DEEPFACE_LOG_LEVEL", "30")
+
 from deepface import DeepFace
 
 
@@ -16,7 +22,7 @@ class FaceUtils:
 
             detector_backend="opencv",
 
-            enforce_detection=False
+            enforce_detection=True
 
         )
 
