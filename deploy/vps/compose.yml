@@ -31,8 +31,7 @@ services:
     ports:
       - "127.0.0.1:8000:7860"
     volumes:
-      - media_data:/app/media
+      - /opt/absensi/data/media:/app/media
 
 volumes:
   postgres_data:
-  media_data:
