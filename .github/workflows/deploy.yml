@@ -24,7 +24,11 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           git clone "https://oauth2:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE}" hf-space
-          rsync -a --delete --exclude=.git backend/ hf-space/
+          rsync -a --delete \
+            --exclude=.git \
+            --exclude=employees/ \
+            --exclude=requirements.txt \
+            backend/ hf-space/
           cd hf-space
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

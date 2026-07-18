@@ -5,3 +5,5 @@ staticfiles
 __pycache__
 *.pyc
 .git
+employees
+requirements.txt
