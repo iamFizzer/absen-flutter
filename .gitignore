@@ -1,0 +1,11 @@
+tools/
+.deploy/
+backend/.env
+backend/db.sqlite3
+backend/media/
+backend/staticfiles/
+**/__pycache__/
+*.py[cod]
+frontend/absensi_fr/.dart_tool/
+frontend/absensi_fr/build/
+frontend/absensi_fr/.firebase/

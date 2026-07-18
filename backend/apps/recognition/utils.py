@@ -4,13 +4,14 @@ import os
 # encoding legacy dapat gagal mencetaknya dan membatalkan request presensi.
 os.environ.setdefault("DEEPFACE_LOG_LEVEL", "30")
 
-from deepface import DeepFace
-
-
 class FaceUtils:
 
     @staticmethod
     def verify_face(reference_image, new_image):
+
+        # TensorFlow/DeepFace sangat berat. Import hanya ketika verifikasi
+        # benar-benar digunakan agar startup Django tetap cepat dan stabil.
+        from deepface import DeepFace
 
         result = DeepFace.verify(
 

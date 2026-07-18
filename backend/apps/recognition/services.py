@@ -72,10 +72,20 @@ class RecognitionService:
 
             temp_path = temp.name
 
+        with tempfile.NamedTemporaryFile(
+            suffix=".jpg",
+            delete=False
+        ) as reference_temp:
+            face.image.open("rb")
+            for chunk in iter(lambda: face.image.read(1024 * 1024), b""):
+                reference_temp.write(chunk)
+            face.image.close()
+            reference_path = reference_temp.name
+
         try:
             try:
                 result = FaceUtils.verify_face(
-                    face.image.path,
+                    reference_path,
                     temp_path
                 )
             except Exception:
@@ -88,6 +98,8 @@ class RecognitionService:
 
             if os.path.exists(temp_path):
                 os.remove(temp_path)
+            if os.path.exists(reference_path):
+                os.remove(reference_path)
 
         confidence = max(
             0,

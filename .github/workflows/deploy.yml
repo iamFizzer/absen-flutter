@@ -1,0 +1,63 @@
+name: Deploy gratis di cloud
+
+on:
+  push:
+    branches: [main, master, Maste]
+  workflow_dispatch:
+
+concurrency:
+  group: production
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend ke Hugging Face
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sinkronkan folder backend
+        env:
+          HF_SPACE: ${{ vars.HF_SPACE }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git clone "https://oauth2:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE}" hf-space
+          rsync -a --delete --exclude=.git backend/ hf-space/
+          cd hf-space
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          git diff --cached --quiet || git commit -m "Deploy ${GITHUB_SHA}"
+          git push
+
+  frontend:
+    name: Flutter Web ke Firebase
+    runs-on: ubuntu-latest
+    needs: backend
+    defaults:
+      run:
+        working-directory: frontend/absensi_fr
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Build Flutter Web
+        run: >-
+          flutter build web --release
+          --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }}
+          --dart-define=ENFORCE_ATTENDANCE_RADIUS=true
+
+      - name: Deploy Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: absensi-geo-fr-test
+          channelId: live
+          entryPoint: frontend/absensi_fr

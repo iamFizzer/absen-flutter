@@ -31,18 +31,36 @@ class AttendanceService {
   }) async {
     try {
       final selfieBytes = await selfie.readAsBytes();
+      if (selfieBytes.isEmpty) {
+        return {
+          "success": false,
+          "message": "Foto kamera kosong. Silakan ambil selfie ulang.",
+        };
+      }
+
+      final originalName = selfie.name.trim();
+      final filename =
+          originalName.toLowerCase().endsWith(".jpg") ||
+              originalName.toLowerCase().endsWith(".jpeg")
+          ? originalName
+          : "selfie_${DateTime.now().millisecondsSinceEpoch}.jpg";
       final formData = FormData.fromMap({
         // Database menyimpan koordinat dengan presisi 7 angka desimal.
         // Mengirim double mentah dapat menghasilkan 14-16 digit dan ditolak
         // oleh DecimalField pada backend.
         "latitude": latitude.toStringAsFixed(7),
         "longitude": longitude.toStringAsFixed(7),
-        "selfie": MultipartFile.fromBytes(selfieBytes, filename: selfie.name),
+        "selfie": MultipartFile.fromBytes(
+          selfieBytes,
+          filename: filename,
+          contentType: DioMediaType("image", "jpeg"),
+        ),
       });
 
       final response = await ApiClient.dio.post(
         ApiEndpoint.attendanceSubmit,
         data: formData,
+        options: Options(contentType: "multipart/form-data"),
       );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {

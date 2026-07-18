@@ -304,53 +304,73 @@ class AdminDashboardPage extends GetView<AdminController> {
     Map<String, dynamic>? item,
   }) async {
     final fields = _fields(type);
+    final formKey = GlobalKey<FormState>();
     final values = {
       for (final f in fields)
         f: TextEditingController(text: item?[f]?.toString() ?? ''),
     };
+    if (item == null) {
+      if (type == 'employees') {
+        values['jenis_kelamin']?.text = 'L';
+        values['status']?.text = 'aktif';
+      }
+      if (type == 'offices') values['status']?.text = 'true';
+      if (type == 'shifts') values['aktif']?.text = 'true';
+    }
     await showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('${item == null ? 'Tambah' : 'Edit'} ${labels[type]}'),
-        content: SizedBox(
-          width: 460,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: fields
-                  .map(
-                    (f) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: TextField(
-                        controller: values[f],
-                        decoration: InputDecoration(labelText: _fieldLabel(f)),
-                      ),
-                    ),
-                  )
-                  .toList(),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setModalState) => AlertDialog(
+          title: Text('${item == null ? 'Tambah' : 'Edit'} ${labels[type]}'),
+          content: SizedBox(
+            width: 520,
+            child: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: fields
+                      .map(
+                        (field) => Padding(
+                          padding: const EdgeInsets.only(bottom: 14),
+                          child: _formField(
+                            context,
+                            type,
+                            field,
+                            values,
+                            isEdit: item != null,
+                            refresh: setModalState,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
             ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Batal'),
+            ),
+            FilledButton.icon(
+              onPressed: () async {
+                if (!(formKey.currentState?.validate() ?? false)) return;
+                final data = <String, dynamic>{
+                  for (final f in fields) f: _convert(type, f, values[f]!.text),
+                };
+                if (item != null && values['password']?.text.isEmpty == true) {
+                  data.remove('password');
+                }
+                if (await controller.save(type, data, id: item?['id'])) {
+                  if (dialogContext.mounted) Navigator.pop(dialogContext);
+                }
+              },
+              icon: const Icon(Icons.save_outlined),
+              label: const Text('Simpan'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Batal'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final data = <String, dynamic>{
-                for (final f in fields) f: _convert(f, values[f]!.text),
-              };
-              if (item != null && values['password']?.text.isEmpty == true) {
-                data.remove('password');
-              }
-              if (await controller.save(type, data, id: item?['id'])) {
-                if (dialogContext.mounted) Navigator.pop(dialogContext);
-              }
-            },
-            child: const Text('Simpan'),
-          ),
-        ],
       ),
     );
     for (final value in values.values) {
@@ -389,13 +409,178 @@ class AdminDashboardPage extends GetView<AdminController> {
       .split('_')
       .map((e) => '${e[0].toUpperCase()}${e.substring(1)}')
       .join(' ');
-  dynamic _convert(String field, String value) {
+
+  Widget _formField(
+    BuildContext context,
+    String type,
+    String field,
+    Map<String, TextEditingController> values, {
+    required bool isEdit,
+    required StateSetter refresh,
+  }) {
+    final value = values[field]!;
+    if (field == 'jenis_kelamin') {
+      return DropdownButtonFormField<String>(
+        initialValue: value.text,
+        decoration: const InputDecoration(labelText: 'Jenis Kelamin'),
+        items: const [
+          DropdownMenuItem(value: 'L', child: Text('Laki-laki')),
+          DropdownMenuItem(value: 'P', child: Text('Perempuan')),
+        ],
+        onChanged: (selected) => value.text = selected ?? 'L',
+      );
+    }
+    if (field == 'office') {
+      final offices = controller.data['offices'] ?? [];
+      final selected = int.tryParse(value.text);
+      return DropdownButtonFormField<int>(
+        initialValue: offices.any((o) => o['id'] == selected) ? selected : null,
+        decoration: const InputDecoration(labelText: 'Kantor'),
+        hint: const Text('Pilih kantor'),
+        items: offices
+            .map(
+              (office) => DropdownMenuItem<int>(
+                value: office['id'] as int,
+                child: Text(office['nama'].toString()),
+              ),
+            )
+            .toList(),
+        validator: (selected) =>
+            selected == null ? 'Kantor wajib dipilih' : null,
+        onChanged: (selected) => value.text = selected?.toString() ?? '',
+      );
+    }
+    if (field == 'status' && type == 'employees') {
+      return DropdownButtonFormField<String>(
+        initialValue: value.text,
+        decoration: const InputDecoration(labelText: 'Status Pegawai'),
+        items: const [
+          DropdownMenuItem(value: 'aktif', child: Text('Aktif')),
+          DropdownMenuItem(value: 'nonaktif', child: Text('Nonaktif')),
+        ],
+        onChanged: (selected) => value.text = selected ?? 'aktif',
+      );
+    }
+    if (field == 'status' || field == 'aktif') {
+      return DropdownButtonFormField<String>(
+        initialValue: value.text.toLowerCase(),
+        decoration: InputDecoration(labelText: _fieldLabel(field)),
+        items: const [
+          DropdownMenuItem(value: 'true', child: Text('Aktif')),
+          DropdownMenuItem(value: 'false', child: Text('Nonaktif')),
+        ],
+        onChanged: (selected) => value.text = selected ?? 'true',
+      );
+    }
+    final isDate = field == 'tanggal' || field == 'tanggal_lahir';
+    final isTime = field == 'jam_masuk' || field == 'jam_pulang';
+    final isNumber = [
+      'radius',
+      'toleransi_menit',
+      'latitude',
+      'longitude',
+      'telepon',
+    ].contains(field);
+    final isLong = field == 'alamat' || field == 'keterangan';
+    final isPassword = field == 'password';
+    return TextFormField(
+      controller: value,
+      obscureText: isPassword,
+      readOnly: isDate || isTime,
+      maxLines: isLong ? 3 : 1,
+      keyboardType: isNumber
+          ? const TextInputType.numberWithOptions(decimal: true, signed: true)
+          : field == 'email'
+          ? TextInputType.emailAddress
+          : TextInputType.text,
+      decoration: InputDecoration(
+        labelText: isPassword && isEdit
+            ? 'Password baru (opsional)'
+            : _fieldLabel(field),
+        hintText: _hint(field),
+        suffixIcon: isDate
+            ? const Icon(Icons.calendar_today_outlined)
+            : isTime
+            ? const Icon(Icons.schedule_outlined)
+            : null,
+      ),
+      validator: (text) {
+        if (isPassword && isEdit && (text == null || text.isEmpty)) return null;
+        if (text == null || text.trim().isEmpty) {
+          if (field == 'keterangan') return null;
+          return '${_fieldLabel(field)} wajib diisi';
+        }
+        if (isPassword && text.length < 6) return 'Password minimal 6 karakter';
+        if (field == 'email' && !GetUtils.isEmail(text)) {
+          return 'Format email tidak valid';
+        }
+        if (isNumber && double.tryParse(text) == null) {
+          return 'Masukkan angka yang valid';
+        }
+        return null;
+      },
+      onTap: isDate
+          ? () => _pickDate(context, value)
+          : isTime
+          ? () => _pickTime(context, value)
+          : null,
+    );
+  }
+
+  Future<void> _pickDate(
+    BuildContext context,
+    TextEditingController value,
+  ) async {
+    final initial = DateTime.tryParse(value.text) ?? DateTime.now();
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(1950),
+      lastDate: DateTime(2100),
+    );
+    if (selected != null) {
+      value.text =
+          '${selected.year}-${selected.month.toString().padLeft(2, '0')}-${selected.day.toString().padLeft(2, '0')}';
+    }
+  }
+
+  Future<void> _pickTime(
+    BuildContext context,
+    TextEditingController value,
+  ) async {
+    final parts = value.text.split(':');
+    final initial = parts.length >= 2
+        ? TimeOfDay(
+            hour: int.tryParse(parts[0]) ?? 8,
+            minute: int.tryParse(parts[1]) ?? 0,
+          )
+        : TimeOfDay.now();
+    final selected = await showTimePicker(
+      context: context,
+      initialTime: initial,
+    );
+    if (selected != null) {
+      value.text =
+          '${selected.hour.toString().padLeft(2, '0')}:${selected.minute.toString().padLeft(2, '0')}';
+    }
+  }
+
+  String? _hint(String field) => switch (field) {
+    'latitude' => 'Contoh: -6.2000000',
+    'longitude' => 'Contoh: 106.8166667',
+    'radius' => 'Radius dalam meter',
+    'tanggal' || 'tanggal_lahir' => 'YYYY-MM-DD',
+    'jam_masuk' || 'jam_pulang' => 'HH:mm',
+    _ => null,
+  };
+
+  dynamic _convert(String type, String field, String value) {
     if (['radius', 'toleransi_menit'].contains(field)) {
       return int.tryParse(value) ?? 0;
     }
     if (field == 'office') return int.tryParse(value);
     if (['latitude', 'longitude'].contains(field)) return value;
-    if (['status', 'aktif'].contains(field)) {
+    if (field == 'aktif' || (field == 'status' && type == 'offices')) {
       return !['false', '0', 'tidak', 'nonaktif'].contains(value.toLowerCase());
     }
     return value;
