@@ -9,3 +9,4 @@ backend/staticfiles/
 frontend/absensi_fr/.dart_tool/
 frontend/absensi_fr/build/
 frontend/absensi_fr/.firebase/
+deploy/vps/.env
