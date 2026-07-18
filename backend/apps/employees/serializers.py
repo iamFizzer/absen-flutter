@@ -8,15 +8,28 @@ from .models import Employee
 class EmployeeSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="user.username")
     password = serializers.CharField(write_only=True, required=False, min_length=6)
+    face_registered = serializers.SerializerMethodField()
+    face_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Employee
         fields = [
             "id", "username", "password", "nip", "nama", "jenis_kelamin",
             "tanggal_lahir", "alamat", "telepon", "email", "jabatan",
-            "office", "foto", "status", "created_at", "updated_at",
+            "office", "foto", "face_registered", "face_image", "status",
+            "created_at", "updated_at",
         ]
         read_only_fields = ["created_at", "updated_at"]
+
+    def get_face_registered(self, obj):
+        return hasattr(obj, "face") and bool(obj.face.image)
+
+    def get_face_image(self, obj):
+        if not hasattr(obj, "face") or not obj.face.image:
+            return None
+        request = self.context.get("request")
+        url = obj.face.image.url
+        return request.build_absolute_uri(url) if request else url
 
     def validate_username(self, value):
         query = User.objects.filter(username=value)

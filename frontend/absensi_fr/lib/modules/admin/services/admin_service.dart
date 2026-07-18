@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/api/api_client.dart';
 
 class AdminService {
@@ -32,6 +33,14 @@ class AdminService {
 
   static Future<void> delete(String type, int id) async {
     await ApiClient.dio.delete('${endpoints[type]}$id/');
+  }
+
+  static Future<void> uploadEmployeeFace(int employeeId, XFile image) async {
+    final bytes = await image.readAsBytes();
+    final formData = FormData.fromMap({
+      'image': MultipartFile.fromBytes(bytes, filename: image.name),
+    });
+    await ApiClient.dio.post('/employees/$employeeId/face/', data: formData);
   }
 
   static String errorMessage(Object error) {

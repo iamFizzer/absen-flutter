@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import '../services/admin_service.dart';
 
 class AdminController extends GetxController {
@@ -49,6 +50,19 @@ class AdminController extends GetxController {
       data[type] = await AdminService.list(type);
     } catch (e) {
       Get.snackbar('Data gagal dihapus', AdminService.errorMessage(e));
+    }
+  }
+
+  Future<void> uploadEmployeeFace(int employeeId, XFile image) async {
+    try {
+      await AdminService.uploadEmployeeFace(employeeId, image);
+      data['employees'] = await AdminService.list('employees');
+      Get.snackbar(
+        'Foto tersimpan',
+        'Foto identifikasi siap digunakan saat absensi.',
+      );
+    } catch (e) {
+      Get.snackbar('Foto gagal disimpan', AdminService.errorMessage(e));
     }
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/session/session_service.dart';
 import '../../../core/theme/app_color.dart';
@@ -245,32 +246,64 @@ class AdminDashboardPage extends GetView<AdminController> {
         : type == 'shifts'
         ? '${item['jam_masuk']} – ${item['jam_pulang']}'
         : item['tanggal']?.toString();
+    final faceImage = item['face_image']?.toString();
+    final hasFace = type == 'employees' && item['face_registered'] == true;
+    final itemSubtitle = type == 'employees'
+        ? '$subtitle\n${hasFace ? 'Foto identifikasi tersedia' : 'Foto identifikasi belum tersedia'}'
+        : subtitle;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Card(
         child: ListTile(
           leading: CircleAvatar(
             backgroundColor: AppColor.primarySoft,
-            child: Icon(icons[type], color: AppColor.primary),
+            backgroundImage: hasFace && faceImage != null
+                ? NetworkImage(faceImage)
+                : null,
+            child: hasFace
+                ? null
+                : Icon(icons[type], color: AppColor.primary),
           ),
           title: Text(title),
-          subtitle: Text(subtitle ?? ''),
+          subtitle: Text(itemSubtitle ?? ''),
           trailing: PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'edit') {
                 _showForm(context, type, item: item);
+              } else if (value == 'face') {
+                _selectFace(item['id'] as int);
               } else {
                 _confirmDelete(context, type, item);
               }
             },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'edit', child: Text('Edit')),
-              PopupMenuItem(value: 'delete', child: Text('Hapus')),
+            itemBuilder: (_) => [
+              const PopupMenuItem(value: 'edit', child: Text('Edit')),
+              if (type == 'employees')
+                PopupMenuItem(
+                  value: 'face',
+                  child: Text(
+                    hasFace
+                        ? 'Ganti foto identifikasi'
+                        : 'Tambah foto identifikasi',
+                  ),
+                ),
+              const PopupMenuItem(value: 'delete', child: Text('Hapus')),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _selectFace(int employeeId) async {
+    final image = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 1200,
+    );
+    if (image != null) {
+      await controller.uploadEmployeeFace(employeeId, image);
+    }
   }
 
   Future<void> _confirmDelete(
