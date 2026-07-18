@@ -7,7 +7,7 @@ class AppConfig {
 
   static const _configuredApiBaseUrl = String.fromEnvironment(
     "API_BASE_URL",
-    defaultValue: "https://iamfizzer-absensi-fr-api.hf.space/api/v1/",
+    defaultValue: "https://202-155-94-237.sslip.io/api/v1/",
   );
 
   static String get apiBaseUrl {
