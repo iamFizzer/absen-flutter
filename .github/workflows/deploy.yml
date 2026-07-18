@@ -20,7 +20,7 @@ jobs:
 
       - name: Sinkronkan folder backend
         env:
-          HF_SPACE: ${{ vars.HF_SPACE }}
+          HF_SPACE: ${{ vars.HF_SPACE || 'iamfizzer/absensi-fr-api' }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           git clone "https://oauth2:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE}" hf-space
@@ -35,7 +35,6 @@ jobs:
   frontend:
     name: Flutter Web ke Firebase
     runs-on: ubuntu-latest
-    needs: backend
     defaults:
       run:
         working-directory: frontend/absensi_fr
@@ -50,8 +49,17 @@ jobs:
       - name: Build Flutter Web
         run: >-
           flutter build web --release
-          --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }}
+          --dart-define=API_BASE_URL=${{ vars.API_BASE_URL || 'https://iamfizzer-absensi-fr-api.hf.space/api/v1/' }}
           --dart-define=ENFORCE_ATTENDANCE_RADIUS=true
+
+      - name: Pastikan build tidak memakai API lokal
+        shell: bash
+        run: |
+          if grep -R -E "127\.0\.0\.1:8000|10\.0\.2\.2:8000|localhost:8000" build/web; then
+            echo "Build masih mengandung URL API lokal."
+            exit 1
+          fi
+          grep -R -q "iamfizzer-absensi-fr-api.hf.space" build/web
 
       - name: Deploy Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0

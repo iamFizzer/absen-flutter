@@ -40,8 +40,8 @@ Di repository GitHub buka **Settings > Secrets and variables > Actions**.
 
 Variables:
 
-- `HF_SPACE`: `username/nama-space`
-- `API_BASE_URL`: `https://username-nama-space.hf.space/api/v1/`
+- `HF_SPACE`: `iamfizzer/absensi-fr-api` (opsional karena sudah menjadi default workflow)
+- `API_BASE_URL`: `https://iamfizzer-absensi-fr-api.hf.space/api/v1/` (opsional karena sudah menjadi default workflow)
 
 Secrets:
 
@@ -57,7 +57,7 @@ Buka tab **Actions**, pilih **Deploy gratis di cloud**, lalu jalankan **Run work
 Setelah selesai:
 
 - Frontend: `https://absensi-geo-fr-test.web.app`
-- Backend health: `https://username-nama-space.hf.space/health/`
+- Backend health: `https://iamfizzer-absensi-fr-api.hf.space/health/`
 
 Untuk perubahan berikutnya cukup push ke branch `Maste`, `main`, atau `master`; deployment berjalan otomatis.
 

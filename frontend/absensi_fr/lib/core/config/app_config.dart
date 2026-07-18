@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 class AppConfig {
   // Gunakan true saat build production.
   static const enforceAttendanceRadius = bool.fromEnvironment(
@@ -9,7 +7,7 @@ class AppConfig {
 
   static const _configuredApiBaseUrl = String.fromEnvironment(
     "API_BASE_URL",
-    defaultValue: "",
+    defaultValue: "https://iamfizzer-absensi-fr-api.hf.space/api/v1/",
   );
 
   static String get apiBaseUrl {
@@ -19,12 +17,6 @@ class AppConfig {
           : "$_configuredApiBaseUrl/";
     }
 
-    if (kIsWeb) {
-      final backendHost = Uri.base.host.isEmpty ? "127.0.0.1" : Uri.base.host;
-      return "http://$backendHost:8000/api/v1/";
-    }
-
-    // Alamat host machine dari Android Emulator.
-    return "http://10.0.2.2:8000/api/v1/";
+    throw StateError("API_BASE_URL belum dikonfigurasi.");
   }
 }
