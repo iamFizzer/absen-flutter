@@ -50,7 +50,7 @@ class _CameraCapturePageState extends State<CameraCapturePage>
       ];
       final presets = kIsWeb
           ? const [ResolutionPreset.medium, ResolutionPreset.low]
-          : const [ResolutionPreset.medium];
+          : const [ResolutionPreset.high, ResolutionPreset.medium];
 
       await _controller?.dispose();
       _controller = null;
@@ -65,6 +65,7 @@ class _CameraCapturePageState extends State<CameraCapturePage>
           );
           try {
             await candidate.initialize();
+            await _configureCamera(candidate);
             _controller = candidate;
             if (mounted) setState(() => _initializing = false);
             return;
@@ -92,6 +93,19 @@ class _CameraCapturePageState extends State<CameraCapturePage>
               'Webcam tidak dapat dibuka. Periksa koneksi dan izin kamera.';
         });
       }
+    }
+  }
+
+  Future<void> _configureCamera(CameraController controller) async {
+    try {
+      await controller.setFocusMode(FocusMode.auto);
+    } on CameraException {
+      // Some web and fixed-focus cameras do not expose focus controls.
+    }
+    try {
+      await controller.setExposureMode(ExposureMode.auto);
+    } on CameraException {
+      // Automatic exposure is already the default on unsupported devices.
     }
   }
 
