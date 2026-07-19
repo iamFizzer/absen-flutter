@@ -2,6 +2,7 @@ import os
 import tempfile
 
 from django.conf import settings
+from PIL import Image, ImageOps
 
 from apps.employees.models import Employee
 
@@ -10,6 +11,25 @@ from .utils import FaceUtils
 
 
 class RecognitionService:
+
+    @staticmethod
+    def _normalized_image_path(image):
+        was_closed = getattr(image, "closed", False)
+        if was_closed and hasattr(image, "open"):
+            image.open("rb")
+        else:
+            image.seek(0)
+        with Image.open(image) as source:
+            normalized = ImageOps.exif_transpose(source).convert("RGB")
+            normalized.thumbnail((1600, 1600), Image.Resampling.LANCZOS)
+            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as temp:
+                normalized.save(temp, format="JPEG", quality=95)
+                path = temp.name
+        if was_closed and hasattr(image, "close"):
+            image.close()
+        else:
+            image.seek(0)
+        return path
 
     @staticmethod
     def register_face(user, image):
@@ -62,28 +82,13 @@ class RecognitionService:
                 "message": "Silakan registrasi wajah terlebih dahulu."
             }
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".jpg",
-            delete=False
-        ) as temp:
-
-            for chunk in image.chunks():
-                temp.write(chunk)
-
-            temp_path = temp.name
-
-        with tempfile.NamedTemporaryFile(
-            suffix=".jpg",
-            delete=False
-        ) as reference_temp:
-            face.image.open("rb")
-            for chunk in iter(lambda: face.image.read(1024 * 1024), b""):
-                reference_temp.write(chunk)
-            face.image.close()
-            reference_path = reference_temp.name
+        temp_path = None
+        reference_path = None
 
         try:
             try:
+                temp_path = RecognitionService._normalized_image_path(image)
+                reference_path = RecognitionService._normalized_image_path(face.image)
                 result = FaceUtils.verify_face(
                     reference_path,
                     temp_path
@@ -96,9 +101,9 @@ class RecognitionService:
 
         finally:
 
-            if os.path.exists(temp_path):
+            if temp_path and os.path.exists(temp_path):
                 os.remove(temp_path)
-            if os.path.exists(reference_path):
+            if reference_path and os.path.exists(reference_path):
                 os.remove(reference_path)
 
         confidence = max(
