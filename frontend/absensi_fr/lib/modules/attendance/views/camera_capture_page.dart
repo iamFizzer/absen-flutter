@@ -36,23 +36,47 @@ class _CameraCapturePageState extends State<CameraCapturePage>
       });
     }
 
+    CameraException? lastError;
     try {
       _cameras = await CameraService.getCameras();
       if (_cameras.isEmpty) {
         throw CameraException('no-camera', 'Kamera tidak ditemukan.');
       }
 
-      final camera = selected ?? CameraService.preferredCamera(_cameras);
-      final oldController = _controller;
-      _controller = CameraController(
-        camera,
-        ResolutionPreset.medium,
-        enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.jpeg,
-      );
-      await oldController?.dispose();
-      await _controller!.initialize();
-      if (mounted) setState(() => _initializing = false);
+      final preferred = selected ?? CameraService.preferredCamera(_cameras);
+      final candidates = [
+        preferred,
+        ..._cameras.where((camera) => camera != preferred),
+      ];
+      final presets = kIsWeb
+          ? const [ResolutionPreset.medium, ResolutionPreset.low]
+          : const [ResolutionPreset.medium];
+
+      await _controller?.dispose();
+      _controller = null;
+
+      for (final camera in candidates) {
+        for (final preset in presets) {
+          final candidate = CameraController(
+            camera,
+            preset,
+            enableAudio: false,
+            imageFormatGroup: ImageFormatGroup.jpeg,
+          );
+          try {
+            await candidate.initialize();
+            _controller = candidate;
+            if (mounted) setState(() => _initializing = false);
+            return;
+          } on CameraException catch (error) {
+            lastError = error;
+            await candidate.dispose();
+          }
+        }
+      }
+
+      throw lastError ??
+          CameraException('camera-unavailable', 'Webcam tidak dapat dibuka.');
     } on CameraException catch (error) {
       if (mounted) {
         setState(() {
@@ -72,12 +96,19 @@ class _CameraCapturePageState extends State<CameraCapturePage>
   }
 
   String _cameraError(CameraException error) {
+    final details = '${error.code} ${error.description ?? ''}'.toLowerCase();
     if (error.code.contains('AccessDenied') ||
-        error.code.contains('permission')) {
+        details.contains('permission') ||
+        details.contains('notallowed')) {
       return 'Izin kamera ditolak. Izinkan kamera pada pengaturan browser atau perangkat, lalu coba lagi.';
     }
     if (kIsWeb && Uri.base.scheme != 'https' && Uri.base.host != 'localhost') {
       return 'Browser hanya mengizinkan webcam melalui HTTPS atau localhost.';
+    }
+    if (details.contains('notreadable') ||
+        details.contains('hardware') ||
+        details.contains('could not start video')) {
+      return 'Webcam sedang digunakan aplikasi lain atau dinonaktifkan oleh sistem. Tutup Zoom, Meet, atau aplikasi kamera, pastikan penutup kamera terbuka, lalu coba lagi.';
     }
     return error.description ?? 'Webcam tidak dapat dibuka.';
   }
