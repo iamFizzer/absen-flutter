@@ -10,6 +10,6 @@ psycopg2-binary==2.9.12
 Pillow==12.3.0
 deepface==0.0.100
 tf-keras==2.21.0
-opencv-python-headless==4.12.0.88
+opencv-python==4.12.0.88
 gunicorn==26.0.0
 whitenoise==6.9.0
