@@ -1,3 +1,4 @@
+import logging
 import os
 import tempfile
 
@@ -8,6 +9,8 @@ from apps.employees.models import Employee
 
 from .models import FaceData
 from .utils import FaceUtils
+
+logger = logging.getLogger(__name__)
 
 
 class RecognitionService:
@@ -93,10 +96,21 @@ class RecognitionService:
                     reference_path,
                     temp_path
                 )
-            except Exception:
+            except Exception as error:
+                logger.exception("Face verification failed")
+                details = str(error).lower()
+                detection_failed = (
+                    "face could not be detected" in details
+                    or "face cannot be detected" in details
+                    or "no face" in details
+                )
                 return {
                     "success": False,
-                    "message": "Wajah tidak dapat dideteksi. Ambil foto ulang dengan pencahayaan yang baik."
+                    "message": (
+                        "Wajah tidak dapat dideteksi. Ambil foto ulang dengan pencahayaan yang baik."
+                        if detection_failed
+                        else "Layanan pengenalan wajah sedang bermasalah. Silakan coba kembali."
+                    )
                 }
 
         finally:
