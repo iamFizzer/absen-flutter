@@ -270,6 +270,8 @@ class AdminDashboardPage extends GetView<AdminController> {
             onSelected: (value) {
               if (value == 'edit') {
                 _showForm(context, type, item: item);
+              } else if (value == 'view-face') {
+                _showFace(context, item);
               } else if (value == 'face') {
                 _selectFace(item['id'] as int);
               } else {
@@ -278,6 +280,11 @@ class AdminDashboardPage extends GetView<AdminController> {
             },
             itemBuilder: (_) => [
               const PopupMenuItem(value: 'edit', child: Text('Edit')),
+              if (hasFace)
+                const PopupMenuItem(
+                  value: 'view-face',
+                  child: Text('Lihat wajah'),
+                ),
               if (type == 'employees')
                 PopupMenuItem(
                   value: 'face',
@@ -291,6 +298,43 @@ class AdminDashboardPage extends GetView<AdminController> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _showFace(
+    BuildContext context,
+    Map<String, dynamic> employee,
+  ) async {
+    final imageUrl = employee['face_image']?.toString();
+    if (imageUrl == null || imageUrl.isEmpty) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(employee['nama']?.toString() ?? 'Foto identifikasi'),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480, maxHeight: 560),
+          child: AspectRatio(
+            aspectRatio: 3 / 4,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.contain,
+                errorBuilder: (_, _, _) => const Center(
+                  child: Text('Foto tidak dapat ditampilkan.'),
+                ),
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Tutup'),
+          ),
+        ],
       ),
     );
   }
