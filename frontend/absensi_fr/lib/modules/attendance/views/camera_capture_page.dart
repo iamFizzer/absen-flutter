@@ -99,12 +99,12 @@ class _CameraCapturePageState extends State<CameraCapturePage>
   Future<void> _configureCamera(CameraController controller) async {
     try {
       await controller.setFocusMode(FocusMode.auto);
-    } on CameraException {
+    } catch (_) {
       // Some web and fixed-focus cameras do not expose focus controls.
     }
     try {
       await controller.setExposureMode(ExposureMode.auto);
-    } on CameraException {
+    } catch (_) {
       // Automatic exposure is already the default on unsupported devices.
     }
   }
