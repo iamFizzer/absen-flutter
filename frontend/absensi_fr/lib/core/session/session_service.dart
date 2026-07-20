@@ -64,6 +64,30 @@ class SessionService {
   static Future<bool> isLoggedIn() async {
     final token = await StorageService.getAccessToken();
 
-    return token != null;
+    if (token == null || token.isEmpty || _isTokenExpired(token)) {
+      await logout();
+      return false;
+    }
+
+    return true;
+  }
+
+  static bool _isTokenExpired(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return true;
+
+      final payload = jsonDecode(
+        utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+      );
+      final expiresAt = payload['exp'];
+
+      if (expiresAt is! num) return true;
+
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      return expiresAt.toInt() <= now;
+    } catch (_) {
+      return true;
+    }
   }
 }

@@ -1,10 +1,15 @@
 import 'package:dio/dio.dart';
+import 'package:get/get.dart';
 
-import '../storage/storage_service.dart';
 import '../config/app_config.dart';
+import '../routes/app_routes.dart';
+import '../session/session_service.dart';
+import '../storage/storage_service.dart';
 
 class ApiClient {
   ApiClient._();
+
+  static bool _isRedirectingToLogin = false;
 
   static final Dio dio =
       Dio(
@@ -32,9 +37,34 @@ class ApiClient {
               handler.next(response);
             },
 
-            onError: (e, handler) {
+            onError: (e, handler) async {
+              if (e.response?.statusCode == 401) {
+                final token = await StorageService.getAccessToken();
+
+                // Jangan perlakukan salah password pada endpoint login sebagai
+                // session kedaluwarsa. Logout hanya jika sebelumnya ada token.
+                if (token != null && token.isNotEmpty) {
+                  await _expireSession();
+                }
+              }
+
               handler.next(e);
             },
           ),
         );
+
+  static Future<void> _expireSession() async {
+    if (_isRedirectingToLogin) return;
+    _isRedirectingToLogin = true;
+
+    try {
+      await SessionService.logout();
+
+      if (Get.currentRoute != AppRoutes.login) {
+        Get.offAllNamed(AppRoutes.login);
+      }
+    } finally {
+      _isRedirectingToLogin = false;
+    }
+  }
 }

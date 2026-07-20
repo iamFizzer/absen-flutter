@@ -1,5 +1,7 @@
 import 'package:get/get.dart';
 
+import '../../../core/routes/app_routes.dart';
+import '../../../core/session/session_service.dart';
 import '../models/dashboard_model.dart';
 import '../services/dashboard_service.dart';
 
@@ -18,7 +20,15 @@ class DashboardController extends GetxController {
   Future<void> loadDashboard() async {
     isLoading.value = true;
     try {
-      dashboard.value = await DashboardService.getDashboard();
+      final result = await DashboardService.getDashboard();
+
+      if (result == null) {
+        await SessionService.logout();
+        Get.offAllNamed(AppRoutes.login);
+        return;
+      }
+
+      dashboard.value = result;
     } finally {
       isLoading.value = false;
     }
