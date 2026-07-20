@@ -46,12 +46,39 @@ class AppTheme {
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        minimumSize: const Size(0, 52),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        textStyle: const TextStyle(
-          fontWeight: FontWeight.w700,
-          letterSpacing: .2,
+      style: ButtonStyle(
+        animationDuration: const Duration(milliseconds: 220),
+        backgroundColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.hovered)
+              ? AppColor.primaryDark
+              : AppColor.primary,
+        ),
+        foregroundColor: const WidgetStatePropertyAll(Colors.white),
+        overlayColor: WidgetStatePropertyAll(
+          Colors.white.withValues(alpha: .1),
+        ),
+        minimumSize: const WidgetStatePropertyAll(Size(0, 52)),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+        textStyle: const WidgetStatePropertyAll(
+          TextStyle(fontWeight: FontWeight.w700, letterSpacing: .2),
+        ),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: ButtonStyle(
+        animationDuration: const Duration(milliseconds: 220),
+        backgroundColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.hovered)
+              ? AppColor.primarySoft
+              : Colors.transparent,
+        ),
+        foregroundColor: const WidgetStatePropertyAll(AppColor.primary),
+        side: const WidgetStatePropertyAll(BorderSide(color: AppColor.border)),
+        minimumSize: const WidgetStatePropertyAll(Size(0, 48)),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
       ),
     ),

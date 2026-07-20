@@ -61,17 +61,32 @@ class AdminDashboardPage extends GetView<AdminController> {
 
   Widget _navigation(BuildContext context, bool desktop) => Container(
     width: desktop ? 230 : double.infinity,
-    color: AppColor.primaryDark,
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xFF174783), Color(0xFF0D2D59)],
+      ),
+    ),
     child: SafeArea(
       child: Column(
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.all(22),
             child: Row(
               children: [
-                Icon(Icons.face_retouching_natural, color: Colors.white),
-                SizedBox(width: 10),
-                Text(
+                Container(
+                  width: 44,
+                  height: 44,
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Image.asset('assets/logo/logo-big.png'),
+                ),
+                const SizedBox(width: 12),
+                const Text(
                   'Presensi Admin',
                   style: TextStyle(
                     color: Colors.white,
@@ -85,14 +100,10 @@ class AdminDashboardPage extends GetView<AdminController> {
           const Divider(color: Colors.white24),
           ...labels.entries.map(
             (entry) => Obx(
-              () => ListTile(
+              () => _HoverNavigationTile(
                 selected: controller.selected.value == entry.key,
-                selectedTileColor: Colors.white12,
-                leading: Icon(icons[entry.key], color: Colors.white),
-                title: Text(
-                  entry.value,
-                  style: const TextStyle(color: Colors.white),
-                ),
+                icon: icons[entry.key]!,
+                label: entry.value,
                 onTap: () {
                   controller.selected.value = entry.key;
                   if (!desktop) Navigator.pop(context);
@@ -101,9 +112,9 @@ class AdminDashboardPage extends GetView<AdminController> {
             ),
           ),
           const Spacer(),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.white),
-            title: const Text('Keluar', style: TextStyle(color: Colors.white)),
+          _HoverNavigationTile(
+            icon: Icons.logout,
+            label: 'Keluar',
             onTap: () async {
               await SessionService.logout();
               Get.offAllNamed(AppRoutes.login);
@@ -115,7 +126,16 @@ class AdminDashboardPage extends GetView<AdminController> {
   );
 
   Widget _header(BuildContext context, bool desktop) => Container(
-    color: Colors.white,
+    decoration: BoxDecoration(
+      color: Colors.white,
+      boxShadow: [
+        BoxShadow(
+          color: AppColor.primaryDark.withValues(alpha: .06),
+          blurRadius: 18,
+          offset: const Offset(0, 5),
+        ),
+      ],
+    ),
     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
     child: Row(
       children: [
@@ -148,8 +168,8 @@ class AdminDashboardPage extends GetView<AdminController> {
     if (controller.isLoading.value) {
       return ListView(
         children: const [
-          SizedBox(height: 280),
-          Center(child: CircularProgressIndicator()),
+          SizedBox(height: 180),
+          Center(child: _AdminLoadingState()),
         ],
       );
     }
@@ -291,7 +311,15 @@ class AdminDashboardPage extends GetView<AdminController> {
         ...items.map(
           (item) => Card(
             child: ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+              leading: CircleAvatar(
+                backgroundColor: AppColor.primarySoft,
+                backgroundImage: item['face_image'] != null
+                    ? NetworkImage(item['face_image'].toString())
+                    : null,
+                child: item['face_image'] == null
+                    ? const Icon(Icons.person_outline)
+                    : null,
+              ),
               title: Text(item['nama']?.toString() ?? '-'),
               subtitle: Text(
                 'NIP: ${item['nip'] ?? '-'}\n'
@@ -804,4 +832,111 @@ class AdminDashboardPage extends GetView<AdminController> {
     }
     return value;
   }
+}
+
+class _HoverNavigationTile extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _HoverNavigationTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.selected = false,
+  });
+
+  @override
+  State<_HoverNavigationTile> createState() => _HoverNavigationTileState();
+}
+
+class _HoverNavigationTileState extends State<_HoverNavigationTile> {
+  bool hovered = false;
+
+  @override
+  Widget build(BuildContext context) => MouseRegion(
+    onEnter: (_) => setState(() => hovered = true),
+    onExit: (_) => setState(() => hovered = false),
+    cursor: SystemMouseCursors.click,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+      decoration: BoxDecoration(
+        color: widget.selected
+            ? Colors.white.withValues(alpha: .18)
+            : hovered
+            ? Colors.white.withValues(alpha: .10)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: ListTile(
+        leading: Icon(widget.icon, color: Colors.white),
+        title: Text(widget.label, style: const TextStyle(color: Colors.white)),
+        onTap: widget.onTap,
+      ),
+    ),
+  );
+}
+
+class _AdminLoadingState extends StatefulWidget {
+  const _AdminLoadingState();
+
+  @override
+  State<_AdminLoadingState> createState() => _AdminLoadingStateState();
+}
+
+class _AdminLoadingStateState extends State<_AdminLoadingState>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController animation = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    animation.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => FadeTransition(
+    opacity: Tween<double>(
+      begin: .45,
+      end: 1,
+    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut)),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 82,
+          height: 82,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: AppColor.primary.withValues(alpha: .15),
+                blurRadius: 24,
+              ),
+            ],
+          ),
+          child: Image.asset('assets/logo/logo-big.png'),
+        ),
+        const SizedBox(height: 20),
+        const SizedBox(
+          width: 28,
+          height: 28,
+          child: CircularProgressIndicator(strokeWidth: 3),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          'Menyiapkan data admin...',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+      ],
+    ),
+  );
 }

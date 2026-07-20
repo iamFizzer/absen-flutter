@@ -226,7 +226,9 @@ class AttendanceService:
         AttendanceService.finalize_previous_days()
 
         result = []
-        for employee in Employee.objects.filter(status="aktif").order_by("nama"):
+        for employee in Employee.objects.filter(status="aktif").select_related(
+            "face"
+        ).order_by("nama"):
             history = AttendanceService.history(employee.user, year, month)
             counts = {
                 "hadir": 0,
@@ -243,6 +245,9 @@ class AttendanceService:
                 "employee_id": employee.id,
                 "nip": employee.nip,
                 "nama": employee.nama,
+                "face_image": employee.face.image.url
+                if hasattr(employee, "face") and employee.face.image
+                else None,
                 **counts,
                 "total_hadir": counts["hadir"] + counts["terlambat"],
             })
@@ -252,7 +257,9 @@ class AttendanceService:
     def recap_by_date(start_date, end_date):
         AttendanceService.finalize_previous_days()
         result = []
-        for employee in Employee.objects.filter(status="aktif").order_by("nama"):
+        for employee in Employee.objects.filter(status="aktif").select_related(
+            "face"
+        ).order_by("nama"):
             records = AttendanceService._history_range(employee, start_date, end_date)
             counts = {
                 key: 0
@@ -265,6 +272,9 @@ class AttendanceService:
                 "employee_id": employee.id,
                 "nip": employee.nip,
                 "nama": employee.nama,
+                "face_image": employee.face.image.url
+                if hasattr(employee, "face") and employee.face.image
+                else None,
                 **counts,
                 "total_hadir": counts["hadir"] + counts["terlambat"],
             })

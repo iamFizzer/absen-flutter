@@ -109,6 +109,7 @@ class AttendanceMonthlyRecapView(APIView):
                 _query_int(request, "month"),
             )
         )
+        _absolute_face_urls(request, data)
         return Response({
             "success": True,
             "data": data,
@@ -161,3 +162,9 @@ def _date_range(request, required=False):
     if start > end or end - start > timedelta(days=366):
         return None
     return start, min(end, timezone.localdate())
+
+
+def _absolute_face_urls(request, rows):
+    for row in rows:
+        if row.get("face_image"):
+            row["face_image"] = request.build_absolute_uri(row["face_image"])

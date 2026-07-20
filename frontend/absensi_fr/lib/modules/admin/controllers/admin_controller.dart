@@ -25,10 +25,12 @@ class AdminController extends GetxController {
         AdminService.endpoints.keys.map(AdminService.list),
       );
       data.assignAll(Map.fromIterables(AdminService.endpoints.keys, values));
+      isLoading.value = false;
     } catch (e) {
       error.value = AdminService.errorMessage(e);
-    } finally {
-      isLoading.value = false;
+      // Tetap tampilkan loading sesuai UX admin ketika data belum berhasil
+      // diterima. Tombol refresh pada header masih dapat mencoba ulang.
+      isLoading.value = true;
     }
   }
 
