@@ -22,7 +22,7 @@
           },
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://202-155-94-237.sslip.io https://res.cloudinary.com; font-src 'self' data:; connect-src 'self' https://202-155-94-237.sslip.io https://*.cloudinary.com; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
+            "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://202-155-94-237.sslip.io https://res.cloudinary.com; font-src 'self' data:; connect-src 'self' https://202-155-94-237.sslip.io https://*.cloudinary.com https://www.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
           },
           {
             "key": "X-Content-Type-Options",
