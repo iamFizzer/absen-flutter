@@ -159,11 +159,19 @@ class AttendancePage extends GetView<AttendanceController> {
                     width: double.infinity,
                     height: 55,
                     child: ElevatedButton.icon(
-                      onPressed: controller.canCheckIn
+                      onPressed: controller.canSubmit
                           ? controller.openCamera
                           : null,
-                      icon: const Icon(Icons.camera_alt),
-                      label: const Text("BUKA KAMERA"),
+                      icon: Icon(
+                        controller.action == 'check_out'
+                            ? Icons.logout
+                            : Icons.login,
+                      ),
+                      label: Text(
+                        controller.action == null
+                            ? "PRESENSI SELESAI"
+                            : "${controller.actionLabel} - BUKA KAMERA",
+                      ),
                     ),
                   );
                 }
@@ -186,7 +194,7 @@ class AttendancePage extends GetView<AttendanceController> {
                       child: ElevatedButton.icon(
                         onPressed:
                             controller.isUploading.value ||
-                                !controller.canCheckIn
+                                !controller.canSubmit
                             ? null
                             : controller.submitAttendance,
 
@@ -204,7 +212,7 @@ class AttendancePage extends GetView<AttendanceController> {
                         label: Text(
                           controller.isUploading.value
                               ? "Mengirim..."
-                              : "Kirim",
+                              : controller.actionLabel,
                         ),
                       ),
                     ),
@@ -258,6 +266,50 @@ class AttendancePage extends GetView<AttendanceController> {
                   },
                 );
               }),
+
+              const SizedBox(height: 32),
+              const Text(
+                "Riwayat Harian Bulan Ini",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              Obx(
+                () => controller.history.isEmpty
+                    ? const Card(
+                        child: Padding(
+                          padding: EdgeInsets.all(20),
+                          child: Center(child: Text("Belum ada riwayat.")),
+                        ),
+                      )
+                    : Column(
+                        children: controller.history.map((item) {
+                          final status = item.status.replaceAll('_', ' ');
+                          return Card(
+                            child: ListTile(
+                              leading: Icon(
+                                item.status == 'alpa'
+                                    ? Icons.cancel_outlined
+                                    : Icons.event_available_outlined,
+                                color: item.status == 'alpa'
+                                    ? Colors.red
+                                    : Colors.green,
+                              ),
+                              title: Text(item.tanggal),
+                              subtitle: Text(
+                                "Masuk: ${item.checkIn ?? '-'}  •  Pulang: ${item.checkOut ?? '-'}"
+                                "${item.catatan == null ? '' : '\n${item.catatan}'}",
+                              ),
+                              trailing: Text(
+                                status.toUpperCase(),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+              ),
 
               const SizedBox(height: 50),
             ],

@@ -1,6 +1,7 @@
 from django.utils import timezone
 
 from apps.attendance.models import Attendance
+from apps.attendance.services import AttendanceService
 from apps.employees.models import Employee
 from apps.master.models import Shift
 
@@ -11,6 +12,8 @@ class DashboardService:
         employee = Employee.objects.select_related("office").filter(user=user).first()
         if employee is None:
             return None
+
+        AttendanceService.finalize_previous_days(employee)
 
         today = timezone.localdate()
         attendance = Attendance.objects.filter(

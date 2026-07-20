@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoint.dart';
 import '../models/attendance_today_model.dart';
+import '../models/attendance_history_model.dart';
 
 class AttendanceService {
   AttendanceService._();
@@ -25,6 +26,7 @@ class AttendanceService {
   }
 
   static Future<Map<String, dynamic>> submit({
+    required String action,
     required double latitude,
     required double longitude,
     required XFile selfie,
@@ -45,6 +47,7 @@ class AttendanceService {
           ? originalName
           : "selfie_${DateTime.now().millisecondsSinceEpoch}.jpg";
       final formData = FormData.fromMap({
+        "action": action,
         // Database menyimpan koordinat dengan presisi 7 angka desimal.
         // Mengirim double mentah dapat menghasilkan 14-16 digit dan ditolak
         // oleh DecimalField pada backend.
@@ -78,6 +81,17 @@ class AttendanceService {
     } catch (e) {
       return {"success": false, "message": "Gagal menyiapkan foto presensi."};
     }
+  }
+
+  static Future<List<AttendanceHistoryModel>> history() async {
+    final response = await ApiClient.dio.get(ApiEndpoint.attendanceHistory);
+    final data = response.data['data'] as List;
+    return data
+        .map(
+          (item) =>
+              AttendanceHistoryModel.fromJson(Map<String, dynamic>.from(item)),
+        )
+        .toList();
   }
 
   static String _errorMessage(dynamic data, String? fallback) {

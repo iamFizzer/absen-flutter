@@ -1,6 +1,11 @@
 from django.urls import path
 
-from .views import AttendanceSubmitView, AttendanceTodayView
+from .views import (
+    AttendanceHistoryView,
+    AttendanceMonthlyRecapView,
+    AttendanceSubmitView,
+    AttendanceTodayView,
+)
 
 urlpatterns = [
 
@@ -18,6 +23,13 @@ urlpatterns = [
         "submit/",
         AttendanceSubmitView.as_view(),
         name="attendance-submit",
+    ),
+
+    path("history/", AttendanceHistoryView.as_view(), name="attendance-history"),
+    path(
+        "monthly-recap/",
+        AttendanceMonthlyRecapView.as_view(),
+        name="attendance-monthly-recap",
     ),
 
 ]

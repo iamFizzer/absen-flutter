@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta
+import calendar
+from datetime import date, datetime, time, timedelta
 
 from django.db import transaction
 from django.conf import settings
@@ -8,6 +9,7 @@ from apps.attendance.models import Attendance
 from apps.common.utils.geolocation import GeoLocation
 from apps.employees.models import Employee
 from apps.master.models import Shift
+from apps.master.models import Holiday
 from apps.recognition.services import RecognitionService
 
 
@@ -16,6 +18,24 @@ class AttendanceError(Exception):
 
 
 class AttendanceService:
+
+    AUTO_CHECKOUT_TIME = time(23, 59)
+
+    @staticmethod
+    def finalize_previous_days(employee=None):
+        queryset = Attendance.objects.filter(
+            tanggal__lt=timezone.localdate(),
+            jam_masuk__isnull=False,
+            jam_pulang__isnull=True,
+        )
+        if employee is not None:
+            queryset = queryset.filter(employee=employee)
+
+        queryset.update(
+            jam_pulang=AttendanceService.AUTO_CHECKOUT_TIME,
+            catatan="Check-out otomatis karena tanggal telah berganti.",
+            updated_at=timezone.now(),
+        )
 
     @staticmethod
     def today(user):
@@ -26,6 +46,8 @@ class AttendanceService:
 
         if employee is None:
             return None
+
+        AttendanceService.finalize_previous_days(employee)
 
         attendance = Attendance.objects.filter(
             employee=employee,
@@ -58,7 +80,7 @@ class AttendanceService:
 
     @staticmethod
     @transaction.atomic
-    def submit(user, latitude, longitude, selfie):
+    def submit(user, action, latitude, longitude, selfie):
         employee = (
             Employee.objects.select_for_update()
             .select_related("office")
@@ -67,6 +89,19 @@ class AttendanceService:
         )
         if employee is None:
             raise AttendanceError("Data karyawan aktif tidak ditemukan.")
+
+        today = timezone.localdate()
+        attendance = (
+            Attendance.objects.select_for_update()
+            .filter(employee=employee, tanggal=today)
+            .first()
+        )
+        if action == "check_in" and attendance is not None:
+            raise AttendanceError("Anda sudah check-in hari ini.")
+        if action == "check_out" and attendance is None:
+            raise AttendanceError("Anda belum check-in hari ini.")
+        if action == "check_out" and attendance.jam_pulang is not None:
+            raise AttendanceError("Anda sudah check-out hari ini.")
 
         office = employee.office
         location = GeoLocation.check_radius(
@@ -88,15 +123,9 @@ class AttendanceService:
             raise AttendanceError("Wajah tidak cocok dengan data yang terdaftar.")
         selfie.seek(0)
 
-        today = timezone.localdate()
         current_time = timezone.localtime().time().replace(microsecond=0)
-        attendance = (
-            Attendance.objects.select_for_update()
-            .filter(employee=employee, tanggal=today)
-            .first()
-        )
 
-        if attendance is None:
+        if action == "check_in":
             shift = Shift.objects.filter(aktif=True).order_by("jam_masuk").first()
             status = "hadir"
             if shift:
@@ -121,15 +150,12 @@ class AttendanceService:
             )
             action = "check_in"
             message = "Check-in berhasil."
-        elif attendance.jam_pulang is None:
+        else:
             attendance.jam_pulang = current_time
             attendance.face_score = face_result.get("confidence", attendance.face_score)
             attendance.save(update_fields=["jam_pulang", "face_score", "updated_at"])
             action = "check_out"
             message = "Check-out berhasil."
-        else:
-            raise AttendanceError("Check-in dan check-out hari ini sudah selesai.")
-
         return {
             "action": action,
             "message": message,
@@ -137,3 +163,87 @@ class AttendanceService:
             "face_score": face_result.get("confidence", 0),
             "attendance": AttendanceService.today(user),
         }
+
+    @staticmethod
+    def history(user, year=None, month=None):
+        employee = Employee.objects.filter(user=user).first()
+        if employee is None:
+            return None
+
+        AttendanceService.finalize_previous_days(employee)
+        today = timezone.localdate()
+        year = year or today.year
+        month = month or today.month
+        if month < 1 or month > 12:
+            year, month = today.year, today.month
+        _, last_day = calendar.monthrange(year, month)
+        start = date(year, month, 1)
+        end = min(date(year, month, last_day), today)
+
+        records = {
+            item.tanggal: item
+            for item in Attendance.objects.filter(
+                employee=employee,
+                tanggal__range=(start, end),
+            )
+        }
+        holidays = set(
+            Holiday.objects.filter(tanggal__range=(start, end)).values_list(
+                "tanggal", flat=True
+            )
+        )
+
+        result = []
+        current = start
+        while current <= end:
+            record = records.get(current)
+            is_workday = current.weekday() < 5 and current not in holidays
+            if record is not None:
+                result.append({
+                    "tanggal": current,
+                    "check_in": record.jam_masuk,
+                    "check_out": record.jam_pulang,
+                    "status": record.status,
+                    "catatan": record.catatan,
+                })
+            elif is_workday:
+                result.append({
+                    "tanggal": current,
+                    "check_in": None,
+                    "check_out": None,
+                    "status": "belum_checkin" if current == today else "alpa",
+                    "catatan": None,
+                })
+            current += timedelta(days=1)
+
+        return list(reversed(result))
+
+    @staticmethod
+    def monthly_recap(year=None, month=None):
+        today = timezone.localdate()
+        year = year or today.year
+        month = month or today.month
+        AttendanceService.finalize_previous_days()
+
+        result = []
+        for employee in Employee.objects.filter(status="aktif").order_by("nama"):
+            history = AttendanceService.history(employee.user, year, month)
+            counts = {
+                "hadir": 0,
+                "terlambat": 0,
+                "izin": 0,
+                "sakit": 0,
+                "cuti": 0,
+                "alpa": 0,
+            }
+            for item in history:
+                if item["status"] in counts:
+                    counts[item["status"]] += 1
+            result.append({
+                "employee_id": employee.id,
+                "nip": employee.nip,
+                "nama": employee.nama,
+                **counts,
+                "total_hadir": counts["hadir"] + counts["terlambat"],
+            })
+        return result

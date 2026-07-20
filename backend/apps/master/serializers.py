@@ -5,6 +5,7 @@ from .models import Holiday
 
 
 class ShiftSerializer(serializers.ModelSerializer):
+    last_update = serializers.DateTimeField(source="updated_at", read_only=True)
 
     class Meta:
 
@@ -14,6 +15,7 @@ class ShiftSerializer(serializers.ModelSerializer):
 
 
 class HolidaySerializer(serializers.ModelSerializer):
+    last_update = serializers.DateTimeField(source="updated_at", read_only=True)
 
     class Meta:
 

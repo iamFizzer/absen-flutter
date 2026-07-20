@@ -1,9 +1,13 @@
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .services import AttendanceError, AttendanceService
-from .serializers import AttendanceSubmitSerializer, AttendanceTodaySerializer
+from .serializers import (
+    AttendanceHistorySerializer,
+    AttendanceSubmitSerializer,
+    AttendanceTodaySerializer,
+)
 
 
 class AttendanceTodayView(APIView):
@@ -44,6 +48,7 @@ class AttendanceSubmitView(APIView):
         try:
             result = AttendanceService.submit(
                 request.user,
+                serializer.validated_data["action"],
                 serializer.validated_data["latitude"],
                 serializer.validated_data["longitude"],
                 serializer.validated_data["selfie"],
@@ -65,3 +70,44 @@ class AttendanceSubmitView(APIView):
                 "attendance": attendance,
             },
         })
+
+
+class AttendanceHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        history = AttendanceService.history(
+            request.user,
+            _query_int(request, "year"),
+            _query_int(request, "month"),
+        )
+        if history is None:
+            return Response(
+                {"success": False, "message": "Data pegawai tidak ditemukan."},
+                status=404,
+            )
+        return Response({
+            "success": True,
+            "data": AttendanceHistorySerializer(history, many=True).data,
+        })
+
+
+class AttendanceMonthlyRecapView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        return Response({
+            "success": True,
+            "data": AttendanceService.monthly_recap(
+                _query_int(request, "year"),
+                _query_int(request, "month"),
+            ),
+        })
+
+
+def _query_int(request, key):
+    value = request.query_params.get(key)
+    try:
+        return int(value) if value else None
+    except ValueError:
+        return None

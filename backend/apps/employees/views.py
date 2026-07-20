@@ -11,7 +11,9 @@ from .serializers import EmployeeSerializer
 
 class EmployeeViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
-    queryset = Employee.objects.select_related("user", "face").all()
+    queryset = Employee.objects.select_related("user", "face").order_by(
+        "-updated_at", "-id"
+    )
     serializer_class = EmployeeSerializer
 
     @action(detail=True, methods=["post"], url_path="face")
@@ -25,6 +27,7 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         face.encoding = None
         face.is_active = True
         face.save()
+        face.employee.save(update_fields=["updated_at"])
         if old_name and old_name != face.image.name:
             face.image.storage.delete(old_name)
 

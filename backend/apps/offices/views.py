@@ -8,5 +8,5 @@ from .serializers import OfficeSerializer
 class OfficeViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
     
-    queryset = Office.objects.all()
+    queryset = Office.objects.order_by("-updated_at", "-id")
     serializer_class = OfficeSerializer

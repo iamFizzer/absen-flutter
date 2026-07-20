@@ -7,6 +7,7 @@ class AdminController extends GetxController {
   final isLoading = true.obs;
   final error = RxnString();
   final data = <String, List<Map<String, dynamic>>>{}.obs;
+  final recapMonth = DateTime(DateTime.now().year, DateTime.now().month).obs;
 
   @override
   void onInit() {
@@ -63,6 +64,22 @@ class AdminController extends GetxController {
       );
     } catch (e) {
       Get.snackbar('Foto gagal disimpan', AdminService.errorMessage(e));
+    }
+  }
+
+  Future<void> changeRecapMonth(int offset) async {
+    final current = recapMonth.value;
+    recapMonth.value = DateTime(current.year, current.month + offset);
+    try {
+      data['attendance_recap'] = await AdminService.list(
+        'attendance_recap',
+        queryParameters: {
+          'year': recapMonth.value.year,
+          'month': recapMonth.value.month,
+        },
+      );
+    } catch (e) {
+      Get.snackbar('Rekap gagal dimuat', AdminService.errorMessage(e));
     }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/session/session_service.dart';
 import '../../../core/theme/app_color.dart';
@@ -14,12 +15,14 @@ class AdminDashboardPage extends GetView<AdminController> {
     'offices': 'Kantor',
     'shifts': 'Shift',
     'holidays': 'Hari Libur',
+    'attendance_recap': 'Rekap Absensi',
   };
   static const icons = {
     'employees': Icons.people_outline,
     'offices': Icons.business_outlined,
     'shifts': Icons.schedule_outlined,
     'holidays': Icons.event_outlined,
+    'attendance_recap': Icons.fact_check_outlined,
   };
 
   @override
@@ -160,6 +163,9 @@ class AdminDashboardPage extends GetView<AdminController> {
     }
     final type = controller.selected.value;
     final items = controller.data[type] ?? [];
+    if (type == 'attendance_recap') {
+      return _attendanceRecap(context, items);
+    }
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -206,6 +212,66 @@ class AdminDashboardPage extends GetView<AdminController> {
     );
   }
 
+  Widget _attendanceRecap(
+    BuildContext context,
+    List<Map<String, dynamic>> items,
+  ) => ListView(
+    padding: const EdgeInsets.all(20),
+    children: [
+      Text(
+        'Rekap Absensi Bulanan',
+        style: Theme.of(context).textTheme.titleLarge,
+      ),
+      const SizedBox(height: 8),
+      Obx(
+        () => Row(
+          children: [
+            IconButton(
+              onPressed: () => controller.changeRecapMonth(-1),
+              icon: const Icon(Icons.chevron_left),
+            ),
+            Text(
+              '${controller.recapMonth.value.month.toString().padLeft(2, '0')}/'
+              '${controller.recapMonth.value.year}',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            IconButton(
+              onPressed: () => controller.changeRecapMonth(1),
+              icon: const Icon(Icons.chevron_right),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 12),
+      if (items.isEmpty)
+        const Card(
+          child: Padding(
+            padding: EdgeInsets.all(28),
+            child: Center(child: Text('Belum ada data rekap.')),
+          ),
+        )
+      else
+        ...items.map(
+          (item) => Card(
+            child: ListTile(
+              leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+              title: Text(item['nama']?.toString() ?? '-'),
+              subtitle: Text(
+                'NIP: ${item['nip'] ?? '-'}\n'
+                'Hadir: ${item['total_hadir'] ?? 0} • '
+                'Terlambat: ${item['terlambat'] ?? 0} • '
+                'Alpa: ${item['alpa'] ?? 0}\n'
+                'Izin: ${item['izin'] ?? 0} • '
+                'Sakit: ${item['sakit'] ?? 0} • '
+                'Cuti: ${item['cuti'] ?? 0}',
+              ),
+              isThreeLine: true,
+            ),
+          ),
+        ),
+    ],
+  );
+
   Widget _stat(String label, int count, IconData icon) => SizedBox(
     width: 180,
     child: Card(
@@ -251,6 +317,7 @@ class AdminDashboardPage extends GetView<AdminController> {
     final itemSubtitle = type == 'employees'
         ? '$subtitle\n${hasFace ? 'Foto identifikasi tersedia' : 'Foto identifikasi belum tersedia'}'
         : subtitle;
+    final lastUpdate = _formatLastUpdate(item['last_update']);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Card(
@@ -260,12 +327,12 @@ class AdminDashboardPage extends GetView<AdminController> {
             backgroundImage: hasFace && faceImage != null
                 ? NetworkImage(faceImage)
                 : null,
-            child: hasFace
-                ? null
-                : Icon(icons[type], color: AppColor.primary),
+            child: hasFace ? null : Icon(icons[type], color: AppColor.primary),
           ),
           title: Text(title),
-          subtitle: Text(itemSubtitle ?? ''),
+          subtitle: Text(
+            '${itemSubtitle ?? ''}\nTerakhir diperbarui: $lastUpdate',
+          ),
           trailing: PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'edit') {
@@ -302,6 +369,12 @@ class AdminDashboardPage extends GetView<AdminController> {
     );
   }
 
+  String _formatLastUpdate(dynamic value) {
+    final parsed = DateTime.tryParse(value?.toString() ?? '')?.toLocal();
+    if (parsed == null) return '-';
+    return DateFormat('dd/MM/yyyy HH:mm').format(parsed);
+  }
+
   Future<void> _showFace(
     BuildContext context,
     Map<String, dynamic> employee,
@@ -322,9 +395,8 @@ class AdminDashboardPage extends GetView<AdminController> {
               child: Image.network(
                 imageUrl,
                 fit: BoxFit.contain,
-                errorBuilder: (_, _, _) => const Center(
-                  child: Text('Foto tidak dapat ditampilkan.'),
-                ),
+                errorBuilder: (_, _, _) =>
+                    const Center(child: Text('Foto tidak dapat ditampilkan.')),
               ),
             ),
           ),

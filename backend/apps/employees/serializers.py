@@ -6,6 +6,7 @@ from .models import Employee
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
+    last_update = serializers.DateTimeField(source="updated_at", read_only=True)
     username = serializers.CharField(source="user.username")
     password = serializers.CharField(write_only=True, required=False, min_length=6)
     face_registered = serializers.SerializerMethodField()
@@ -17,7 +18,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
             "id", "username", "password", "nip", "nama", "jenis_kelamin",
             "tanggal_lahir", "alamat", "telepon", "email", "jabatan",
             "office", "foto", "face_registered", "face_image", "status",
-            "created_at", "updated_at",
+            "created_at", "updated_at", "last_update",
         ]
         read_only_fields = ["created_at", "updated_at"]
 

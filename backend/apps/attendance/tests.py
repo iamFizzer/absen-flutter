@@ -52,4 +52,14 @@ class AttendanceCoordinateSerializerTests(SimpleTestCase):
         self.assertIn("latitude", serializer.errors)
         self.assertIn("longitude", serializer.errors)
 
+    def test_action_must_be_check_in_or_check_out(self):
+        serializer = AttendanceSubmitSerializer(data={
+            "action": "check_in_again",
+            "latitude": "-6.2000000",
+            "longitude": "106.8166667",
+        })
+
+        serializer.is_valid()
+        self.assertIn("action", serializer.errors)
+
 # Create your tests here.

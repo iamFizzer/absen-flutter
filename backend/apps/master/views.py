@@ -13,7 +13,7 @@ class ShiftViewSet(viewsets.ModelViewSet):
     
     queryset = Shift.objects.filter(
         aktif=True
-    )
+    ).order_by("-updated_at", "-id")
 
     serializer_class = ShiftSerializer
 
@@ -21,6 +21,6 @@ class ShiftViewSet(viewsets.ModelViewSet):
 class HolidayViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
 
-    queryset = Holiday.objects.all()
+    queryset = Holiday.objects.order_by("-updated_at", "-id")
 
     serializer_class = HolidaySerializer

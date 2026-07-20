@@ -9,11 +9,20 @@ class AdminService {
     'offices': '/offices/',
     'shifts': '/master/shifts/',
     'holidays': '/master/holidays/',
+    'attendance_recap': '/attendance/monthly-recap/',
   };
 
-  static Future<List<Map<String, dynamic>>> list(String type) async {
-    final response = await ApiClient.dio.get(endpoints[type]!);
-    final raw = response.data is Map ? response.data['results'] : response.data;
+  static Future<List<Map<String, dynamic>>> list(
+    String type, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    final response = await ApiClient.dio.get(
+      endpoints[type]!,
+      queryParameters: queryParameters,
+    );
+    final raw = response.data is Map
+        ? response.data['results'] ?? response.data['data']
+        : response.data;
     return (raw as List)
         .map((item) => Map<String, dynamic>.from(item))
         .toList();

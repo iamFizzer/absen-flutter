@@ -3,19 +3,30 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/services/location_service.dart';
 import '../models/attendance_today_model.dart';
+import '../models/attendance_history_model.dart';
 import '../services/attendance_service.dart';
 import '../views/camera_capture_page.dart';
 
 class AttendanceController extends GetxController {
-  bool get canCheckIn {
+  String? get action {
+    final data = attendance.value;
+    if (data == null || data.checkOut != null) return null;
+    return data.checkIn == null ? 'check_in' : 'check_out';
+  }
+
+  String get actionLabel => action == 'check_out' ? 'CHECK OUT' : 'CHECK IN';
+
+  bool get canSubmit {
     final data = attendance.value;
     return (isInsideOffice.value || !AppConfig.enforceAttendanceRadius) &&
         data != null &&
-        data.checkOut == null &&
+        action != null &&
         !isLocationLoading.value;
   }
 
   final attendance = Rxn<AttendanceTodayModel>();
+
+  final history = <AttendanceHistoryModel>[].obs;
 
   final isLoading = true.obs;
 
@@ -43,7 +54,17 @@ class AttendanceController extends GetxController {
   Future<void> initialize() async {
     await loadAttendance();
 
+    await loadHistory();
+
     await loadLocation();
+  }
+
+  Future<void> loadHistory() async {
+    try {
+      history.assignAll(await AttendanceService.history());
+    } catch (_) {
+      history.clear();
+    }
   }
 
   /// ==========================
@@ -106,7 +127,7 @@ class AttendanceController extends GetxController {
       return;
     }
 
-    if (!canCheckIn) {
+    if (!canSubmit || action == null) {
       Get.snackbar(
         "Presensi ditolak",
         attendance.value?.checkOut != null
@@ -119,6 +140,7 @@ class AttendanceController extends GetxController {
     isUploading.value = true;
     try {
       final result = await AttendanceService.submit(
+        action: action!,
         latitude: latitude.value,
         longitude: longitude.value,
         selfie: photo.value!,
@@ -127,6 +149,7 @@ class AttendanceController extends GetxController {
       if (result["success"] == true) {
         photo.value = null;
         await loadAttendance();
+        await loadHistory();
         Get.snackbar("Berhasil", result["message"] ?? "Presensi berhasil.");
       } else {
         Get.snackbar(
