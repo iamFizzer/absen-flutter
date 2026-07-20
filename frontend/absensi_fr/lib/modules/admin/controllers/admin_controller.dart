@@ -8,6 +8,8 @@ class AdminController extends GetxController {
   final error = RxnString();
   final data = <String, List<Map<String, dynamic>>>{}.obs;
   final recapMonth = DateTime(DateTime.now().year, DateTime.now().month).obs;
+  final recapStart = DateTime(DateTime.now().year, DateTime.now().month, 1).obs;
+  final recapEnd = DateTime.now().obs;
 
   @override
   void onInit() {
@@ -80,6 +82,36 @@ class AdminController extends GetxController {
       );
     } catch (e) {
       Get.snackbar('Rekap gagal dimuat', AdminService.errorMessage(e));
+    }
+  }
+
+  Future<void> loadRecapRange() async {
+    try {
+      data['attendance_recap'] = await AdminService.list(
+        'attendance_recap',
+        queryParameters: {
+          'start_date': AdminService.dateText(recapStart.value),
+          'end_date': AdminService.dateText(recapEnd.value),
+        },
+      );
+    } catch (e) {
+      Get.snackbar('Rekap gagal dimuat', AdminService.errorMessage(e));
+    }
+  }
+
+  Future<void> exportEmployees(String format) async {
+    try {
+      await AdminService.exportEmployees(format);
+    } catch (e) {
+      Get.snackbar('Download gagal', AdminService.errorMessage(e));
+    }
+  }
+
+  Future<void> exportRecap(String format) async {
+    try {
+      await AdminService.exportRecap(format, recapStart.value, recapEnd.value);
+    } catch (e) {
+      Get.snackbar('Download gagal', AdminService.errorMessage(e));
     }
   }
 }

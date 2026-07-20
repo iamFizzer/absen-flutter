@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     AttendanceHistoryView,
     AttendanceMonthlyRecapView,
+    AttendanceRecapExportView,
     AttendanceSubmitView,
     AttendanceTodayView,
 )
@@ -30,6 +31,11 @@ urlpatterns = [
         "monthly-recap/",
         AttendanceMonthlyRecapView.as_view(),
         name="attendance-monthly-recap",
+    ),
+    path(
+        "recap/export/",
+        AttendanceRecapExportView.as_view(),
+        name="attendance-recap-export",
     ),
 
 ]

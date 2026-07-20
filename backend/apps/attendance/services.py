@@ -247,3 +247,56 @@ class AttendanceService:
                 "total_hadir": counts["hadir"] + counts["terlambat"],
             })
         return result
+
+    @staticmethod
+    def recap_by_date(start_date, end_date):
+        AttendanceService.finalize_previous_days()
+        result = []
+        for employee in Employee.objects.filter(status="aktif").order_by("nama"):
+            records = AttendanceService._history_range(employee, start_date, end_date)
+            counts = {
+                key: 0
+                for key in ("hadir", "terlambat", "izin", "sakit", "cuti", "alpa")
+            }
+            for item in records:
+                if item["status"] in counts:
+                    counts[item["status"]] += 1
+            result.append({
+                "employee_id": employee.id,
+                "nip": employee.nip,
+                "nama": employee.nama,
+                **counts,
+                "total_hadir": counts["hadir"] + counts["terlambat"],
+            })
+        return result
+
+    @staticmethod
+    def _history_range(employee, start, end):
+        today = timezone.localdate()
+        end = min(end, today)
+        if start > end:
+            return []
+        records = {
+            item.tanggal: item
+            for item in Attendance.objects.filter(
+                employee=employee,
+                tanggal__range=(start, end),
+            )
+        }
+        holidays = set(
+            Holiday.objects.filter(tanggal__range=(start, end)).values_list(
+                "tanggal", flat=True
+            )
+        )
+        result = []
+        current = start
+        while current <= end:
+            record = records.get(current)
+            if record is not None:
+                result.append({"status": record.status})
+            elif current.weekday() < 5 and current not in holidays:
+                result.append({
+                    "status": "belum_checkin" if current == today else "alpa"
+                })
+            current += timedelta(days=1)
+        return result

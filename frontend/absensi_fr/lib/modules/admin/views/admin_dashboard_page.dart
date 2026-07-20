@@ -198,6 +198,24 @@ class AdminDashboardPage extends GetView<AdminController> {
             ),
           ],
         ),
+        if (type == 'employees') ...[
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => controller.exportEmployees('xlsx'),
+                icon: const Icon(Icons.table_view_outlined),
+                label: const Text('Download Excel'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => controller.exportEmployees('pdf'),
+                icon: const Icon(Icons.picture_as_pdf_outlined),
+                label: const Text('Download PDF'),
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: 12),
         if (items.isEmpty)
           const Card(
@@ -224,20 +242,39 @@ class AdminDashboardPage extends GetView<AdminController> {
       ),
       const SizedBox(height: 8),
       Obx(
-        () => Row(
+        () => Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            IconButton(
-              onPressed: () => controller.changeRecapMonth(-1),
-              icon: const Icon(Icons.chevron_left),
+            OutlinedButton.icon(
+              onPressed: () => _selectRecapDate(context, true),
+              icon: const Icon(Icons.date_range_outlined),
+              label: Text(
+                'Dari ${DateFormat('dd/MM/yyyy').format(controller.recapStart.value)}',
+              ),
             ),
-            Text(
-              '${controller.recapMonth.value.month.toString().padLeft(2, '0')}/'
-              '${controller.recapMonth.value.year}',
-              style: Theme.of(context).textTheme.titleMedium,
+            OutlinedButton.icon(
+              onPressed: () => _selectRecapDate(context, false),
+              icon: const Icon(Icons.event_available_outlined),
+              label: Text(
+                'Sampai ${DateFormat('dd/MM/yyyy').format(controller.recapEnd.value)}',
+              ),
             ),
-            IconButton(
-              onPressed: () => controller.changeRecapMonth(1),
-              icon: const Icon(Icons.chevron_right),
+            FilledButton.icon(
+              onPressed: controller.loadRecapRange,
+              icon: const Icon(Icons.search),
+              label: const Text('Tampilkan'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => controller.exportRecap('xlsx'),
+              icon: const Icon(Icons.table_view_outlined),
+              label: const Text('Excel'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => controller.exportRecap('pdf'),
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              label: const Text('PDF'),
             ),
           ],
         ),
@@ -271,6 +308,39 @@ class AdminDashboardPage extends GetView<AdminController> {
         ),
     ],
   );
+
+  Future<void> _selectRecapDate(BuildContext context, bool isStart) async {
+    final current = isStart
+        ? controller.recapStart.value
+        : controller.recapEnd.value;
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: current,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (selected == null) return;
+
+    if (isStart) {
+      if (selected.isAfter(controller.recapEnd.value)) {
+        Get.snackbar(
+          'Tanggal tidak valid',
+          'Tanggal mulai melewati tanggal akhir.',
+        );
+        return;
+      }
+      controller.recapStart.value = selected;
+    } else {
+      if (selected.isBefore(controller.recapStart.value)) {
+        Get.snackbar(
+          'Tanggal tidak valid',
+          'Tanggal akhir sebelum tanggal mulai.',
+        );
+        return;
+      }
+      controller.recapEnd.value = selected;
+    }
+  }
 
   Widget _stat(String label, int count, IconData icon) => SizedBox(
     width: 180,

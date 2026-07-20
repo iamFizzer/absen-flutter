@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/download/download_service.dart';
 
 class AdminService {
   AdminService._();
@@ -51,6 +52,48 @@ class AdminService {
     });
     await ApiClient.dio.post('/employees/$employeeId/face/', data: formData);
   }
+
+  static Future<void> exportEmployees(String format) async {
+    await _download('/employees/export/', 'data-pegawai.$format', format);
+  }
+
+  static Future<void> exportRecap(
+    String format,
+    DateTime start,
+    DateTime end,
+  ) async {
+    final startText = dateText(start);
+    final endText = dateText(end);
+    await _download(
+      '/attendance/recap/export/',
+      'rekap-absensi-$startText-$endText.$format',
+      format,
+      queryParameters: {'start_date': startText, 'end_date': endText},
+    );
+  }
+
+  static Future<void> _download(
+    String endpoint,
+    String filename,
+    String format, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    final response = await ApiClient.dio.get<List<int>>(
+      endpoint,
+      queryParameters: {...?queryParameters, 'format': format},
+      options: Options(responseType: ResponseType.bytes),
+    );
+    DownloadService.save(
+      response.data!,
+      filename,
+      format == 'pdf'
+          ? 'application/pdf'
+          : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+  }
+
+  static String dateText(DateTime value) =>
+      '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
 
   static String errorMessage(Object error) {
     if (error is DioException && error.response?.data != null) {
