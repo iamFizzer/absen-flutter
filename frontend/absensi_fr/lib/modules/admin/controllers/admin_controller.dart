@@ -76,6 +76,29 @@ class AdminController extends GetxController {
     }
   }
 
+  Future<bool> changeEmployeePassword(
+    int employeeId,
+    String password,
+    String confirmation,
+  ) async {
+    try {
+      await AdminService.changeEmployeePassword(
+        employeeId,
+        password,
+        confirmation,
+      );
+      Get.snackbar(
+        'Password berhasil diubah',
+        'Pegawai dapat login menggunakan password baru.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return true;
+    } catch (e) {
+      Get.snackbar('Password gagal diubah', AdminService.errorMessage(e));
+      return false;
+    }
+  }
+
   Future<void> changeRecapMonth(int offset) async {
     final current = recapMonth.value;
     recapMonth.value = DateTime(current.year, current.month + offset);

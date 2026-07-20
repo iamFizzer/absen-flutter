@@ -53,6 +53,17 @@ class AdminService {
     await ApiClient.dio.post('/employees/$employeeId/face/', data: formData);
   }
 
+  static Future<void> changeEmployeePassword(
+    int employeeId,
+    String password,
+    String confirmation,
+  ) async {
+    await ApiClient.dio.post(
+      '/employees/$employeeId/change-password/',
+      data: {'password': password, 'password_confirmation': confirmation},
+    );
+  }
+
   static Future<void> exportEmployees(String format) async {
     await _download('/employees/export/', 'data-pegawai.$format', format);
   }

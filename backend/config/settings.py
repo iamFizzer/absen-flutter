@@ -184,6 +184,9 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 REST_FRAMEWORK = {
+    # Query `format` digunakan oleh endpoint export (xlsx/pdf), bukan untuk
+    # memilih renderer DRF. Tanpa ini DRF mengembalikan 404 sebelum view jalan.
+    "URL_FORMAT_OVERRIDE": None,
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),

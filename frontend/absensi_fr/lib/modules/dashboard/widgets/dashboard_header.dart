@@ -5,11 +5,13 @@ import '../../../core/widgets/live_clock.dart';
 class DashboardHeader extends StatelessWidget {
   final String nama;
   final String jabatan;
+  final String? faceImage;
   final VoidCallback onLogout;
   const DashboardHeader({
     super.key,
     required this.nama,
     required this.jabatan,
+    this.faceImage,
     required this.onLogout,
   });
 
@@ -44,19 +46,23 @@ class DashboardHeader extends StatelessWidget {
                 Container(
                   width: 48,
                   height: 48,
-                  alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: .15),
                     borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Text(
-                    nama.isEmpty ? '?' : nama[0].toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 21,
-                      fontWeight: FontWeight.w700,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: .35),
+                      width: 1.5,
                     ),
                   ),
+                  clipBehavior: Clip.antiAlias,
+                  child: faceImage == null || faceImage!.isEmpty
+                      ? _AvatarFallback(nama: nama)
+                      : Image.network(
+                          faceImage!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) =>
+                              _AvatarFallback(nama: nama),
+                        ),
                 ),
                 const SizedBox(width: 13),
                 Expanded(
@@ -91,6 +97,27 @@ class DashboardHeader extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _AvatarFallback extends StatelessWidget {
+  final String nama;
+
+  const _AvatarFallback({required this.nama});
+
+  @override
+  Widget build(BuildContext context) => ColoredBox(
+    color: Colors.white.withValues(alpha: .12),
+    child: Center(
+      child: Text(
+        nama.isEmpty ? '?' : nama[0].toUpperCase(),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 21,
+          fontWeight: FontWeight.w700,
         ),
       ),
     ),

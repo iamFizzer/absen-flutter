@@ -3,6 +3,7 @@ import '../../attendance/models/attendance_history_model.dart';
 class DashboardModel {
   final String nama;
   final String jabatan;
+  final String? faceImage;
   final String office;
   final String shift;
   final String? jamMasuk;
@@ -18,6 +19,7 @@ class DashboardModel {
   const DashboardModel({
     required this.nama,
     required this.jabatan,
+    this.faceImage,
     required this.office,
     required this.shift,
     this.jamMasuk,
@@ -35,6 +37,7 @@ class DashboardModel {
     return DashboardModel(
       nama: json["nama"] ?? "",
       jabatan: json["jabatan"] ?? "",
+      faceImage: json["face_image"]?.toString(),
       office: json["office"] ?? "",
       shift: json["shift"] ?? "",
       jamMasuk: json["jam_masuk"],

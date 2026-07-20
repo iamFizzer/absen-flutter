@@ -253,50 +253,69 @@ class AdminDashboardPage extends GetView<AdminController> {
   ) => ListView(
     padding: const EdgeInsets.all(20),
     children: [
-      Text(
-        'Rekap Absensi Bulanan',
-        style: Theme.of(context).textTheme.titleLarge,
+      Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColor.primarySoft,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.analytics_outlined,
+              color: AppColor.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Rekap Absensi',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                Text(
+                  'Pantau ringkasan kehadiran pegawai berdasarkan periode.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.blueGrey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
-      const SizedBox(height: 8),
-      Obx(
-        () => Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            OutlinedButton.icon(
-              onPressed: () => _selectRecapDate(context, true),
-              icon: const Icon(Icons.date_range_outlined),
-              label: Text(
-                'Dari ${DateFormat('dd/MM/yyyy').format(controller.recapStart.value)}',
+      const SizedBox(height: 20),
+      _recapToolbar(context),
+      const SizedBox(height: 20),
+      Row(
+        children: [
+          Text(
+            'Hasil Rekap',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: AppColor.primarySoft,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '${items.length} pegawai',
+              style: const TextStyle(
+                color: AppColor.primary,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            OutlinedButton.icon(
-              onPressed: () => _selectRecapDate(context, false),
-              icon: const Icon(Icons.event_available_outlined),
-              label: Text(
-                'Sampai ${DateFormat('dd/MM/yyyy').format(controller.recapEnd.value)}',
-              ),
-            ),
-            FilledButton.icon(
-              onPressed: controller.loadRecapRange,
-              icon: const Icon(Icons.search),
-              label: const Text('Tampilkan'),
-            ),
-            OutlinedButton.icon(
-              onPressed: () => controller.exportRecap('xlsx'),
-              icon: const Icon(Icons.table_view_outlined),
-              label: const Text('Excel'),
-            ),
-            OutlinedButton.icon(
-              onPressed: () => controller.exportRecap('pdf'),
-              icon: const Icon(Icons.picture_as_pdf_outlined),
-              label: const Text('PDF'),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
-      const SizedBox(height: 12),
+      const SizedBox(height: 10),
       if (items.isEmpty)
         const Card(
           child: Padding(
@@ -321,17 +340,187 @@ class AdminDashboardPage extends GetView<AdminController> {
               subtitle: Text(
                 'NIP: ${item['nip'] ?? '-'}\n'
                 'Hadir: ${item['total_hadir'] ?? 0} • '
-                'Terlambat: ${item['terlambat'] ?? 0} • '
                 'Alpa: ${item['alpa'] ?? 0}\n'
                 'Izin: ${item['izin'] ?? 0} • '
                 'Sakit: ${item['sakit'] ?? 0} • '
                 'Cuti: ${item['cuti'] ?? 0}',
               ),
               isThreeLine: true,
+              trailing: _RecapLateBadge(value: item['terlambat'] ?? 0),
             ),
           ),
         ),
     ],
+  );
+
+  Widget _recapToolbar(BuildContext context) => Card(
+    margin: EdgeInsets.zero,
+    child: Padding(
+      padding: const EdgeInsets.all(20),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 720;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.filter_alt_outlined,
+                    color: AppColor.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Filter Periode',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Pilih rentang tanggal untuk menampilkan dan mengunduh rekap.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.blueGrey.shade600,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Obx(
+                () => Flex(
+                  direction: compact ? Axis.vertical : Axis.horizontal,
+                  crossAxisAlignment: compact
+                      ? CrossAxisAlignment.stretch
+                      : CrossAxisAlignment.end,
+                  children: [
+                    if (compact)
+                      _recapDateField(
+                        label: 'Tanggal mulai',
+                        value: controller.recapStart.value,
+                        onTap: () => _selectRecapDate(context, true),
+                      )
+                    else
+                      Expanded(
+                        child: _recapDateField(
+                          label: 'Tanggal mulai',
+                          value: controller.recapStart.value,
+                          onTap: () => _selectRecapDate(context, true),
+                        ),
+                      ),
+                    SizedBox(width: compact ? 0 : 12, height: compact ? 12 : 0),
+                    if (compact)
+                      _recapDateField(
+                        label: 'Tanggal akhir',
+                        value: controller.recapEnd.value,
+                        onTap: () => _selectRecapDate(context, false),
+                      )
+                    else
+                      Expanded(
+                        child: _recapDateField(
+                          label: 'Tanggal akhir',
+                          value: controller.recapEnd.value,
+                          onTap: () => _selectRecapDate(context, false),
+                        ),
+                      ),
+                    SizedBox(width: compact ? 0 : 12, height: compact ? 16 : 0),
+                    SizedBox(
+                      height: 50,
+                      width: compact ? double.infinity : null,
+                      child: FilledButton.icon(
+                        onPressed: controller.loadRecapRange,
+                        icon: const Icon(Icons.search),
+                        label: const Text('Tampilkan Rekap'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 18),
+                child: Divider(height: 1),
+              ),
+              Flex(
+                direction: compact ? Axis.vertical : Axis.horizontal,
+                crossAxisAlignment: compact
+                    ? CrossAxisAlignment.stretch
+                    : CrossAxisAlignment.center,
+                children: [
+                  if (compact)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Unduh Rekap',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        Text(
+                          'File mengikuti periode yang dipilih di atas.',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.blueGrey.shade600),
+                        ),
+                      ],
+                    )
+                  else
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Unduh Rekap',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          Text(
+                            'File mengikuti periode yang dipilih di atas.',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: Colors.blueGrey.shade600),
+                          ),
+                        ],
+                      ),
+                    ),
+                  SizedBox(width: compact ? 0 : 16, height: compact ? 12 : 0),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () => controller.exportRecap('xlsx'),
+                        icon: const Icon(Icons.table_view_outlined),
+                        label: const Text('Download Excel'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () => controller.exportRecap('pdf'),
+                        icon: const Icon(Icons.picture_as_pdf_outlined),
+                        label: const Text('Download PDF'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    ),
+  );
+
+  Widget _recapDateField({
+    required String label,
+    required DateTime value,
+    required VoidCallback onTap,
+  }) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(12),
+    child: InputDecorator(
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: const Icon(Icons.calendar_month_outlined),
+        suffixIcon: const Icon(Icons.expand_more),
+      ),
+      child: Text(
+        DateFormat('dd MMM yyyy').format(value),
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+    ),
   );
 
   Future<void> _selectRecapDate(BuildContext context, bool isStart) async {
@@ -432,6 +621,8 @@ class AdminDashboardPage extends GetView<AdminController> {
             onSelected: (value) {
               if (value == 'edit') {
                 _showForm(context, type, item: item);
+              } else if (value == 'password') {
+                _showPasswordForm(context, item);
               } else if (value == 'view-face') {
                 _showFace(context, item);
               } else if (value == 'face') {
@@ -442,6 +633,11 @@ class AdminDashboardPage extends GetView<AdminController> {
             },
             itemBuilder: (_) => [
               const PopupMenuItem(value: 'edit', child: Text('Edit')),
+              if (type == 'employees')
+                const PopupMenuItem(
+                  value: 'password',
+                  child: Text('Ubah password'),
+                ),
               if (hasFace)
                 const PopupMenuItem(
                   value: 'view-face',
@@ -517,6 +713,109 @@ class AdminDashboardPage extends GetView<AdminController> {
     }
   }
 
+  Future<void> _showPasswordForm(
+    BuildContext context,
+    Map<String, dynamic> employee,
+  ) async {
+    final formKey = GlobalKey<FormState>();
+    final password = TextEditingController();
+    final confirmation = TextEditingController();
+    var hidePassword = true;
+    var hideConfirmation = true;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setModalState) => AlertDialog(
+          title: const Text('Ubah password pegawai'),
+          content: SizedBox(
+            width: 420,
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    employee['nama']?.toString() ?? '-',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text('Username: ${employee['username'] ?? '-'}'),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: password,
+                    obscureText: hidePassword,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      labelText: 'Password baru',
+                      suffixIcon: IconButton(
+                        onPressed: () =>
+                            setModalState(() => hidePassword = !hidePassword),
+                        icon: Icon(
+                          hidePassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                        ),
+                      ),
+                    ),
+                    validator: (value) => (value?.length ?? 0) < 6
+                        ? 'Password minimal 6 karakter'
+                        : null,
+                  ),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: confirmation,
+                    obscureText: hideConfirmation,
+                    decoration: InputDecoration(
+                      labelText: 'Konfirmasi password baru',
+                      suffixIcon: IconButton(
+                        onPressed: () => setModalState(
+                          () => hideConfirmation = !hideConfirmation,
+                        ),
+                        icon: Icon(
+                          hideConfirmation
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                        ),
+                      ),
+                    ),
+                    validator: (value) => value != password.text
+                        ? 'Konfirmasi password tidak sama'
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Batal'),
+            ),
+            FilledButton.icon(
+              onPressed: () async {
+                if (!(formKey.currentState?.validate() ?? false)) return;
+                final saved = await controller.changeEmployeePassword(
+                  employee['id'] as int,
+                  password.text,
+                  confirmation.text,
+                );
+                if (saved && dialogContext.mounted) {
+                  Navigator.pop(dialogContext);
+                }
+              },
+              icon: const Icon(Icons.lock_reset_outlined),
+              label: const Text('Ubah password'),
+            ),
+          ],
+        ),
+      ),
+    );
+    password.dispose();
+    confirmation.dispose();
+  }
+
   Future<void> _confirmDelete(
     BuildContext context,
     String type,
@@ -584,7 +883,7 @@ class AdminDashboardPage extends GetView<AdminController> {
     String type, {
     Map<String, dynamic>? item,
   }) async {
-    final fields = _fields(type);
+    final fields = _fields(type, isEdit: item != null);
     final formKey = GlobalKey<FormState>();
     final values = {
       for (final f in fields)
@@ -640,9 +939,6 @@ class AdminDashboardPage extends GetView<AdminController> {
                 final data = <String, dynamic>{
                   for (final f in fields) f: _convert(type, f, values[f]!.text),
                 };
-                if (item != null && values['password']?.text.isEmpty == true) {
-                  data.remove('password');
-                }
                 if (await controller.save(type, data, id: item?['id'])) {
                   if (dialogContext.mounted) Navigator.pop(dialogContext);
                 }
@@ -659,7 +955,7 @@ class AdminDashboardPage extends GetView<AdminController> {
     }
   }
 
-  List<String> _fields(String type) => switch (type) {
+  List<String> _fields(String type, {bool isEdit = false}) => switch (type) {
     'offices' => [
       'nama',
       'alamat',
@@ -671,8 +967,8 @@ class AdminDashboardPage extends GetView<AdminController> {
     'shifts' => ['nama', 'jam_masuk', 'jam_pulang', 'toleransi_menit', 'aktif'],
     'holidays' => ['nama', 'tanggal', 'keterangan'],
     'employees' => [
-      'username',
-      'password',
+      if (!isEdit) 'username',
+      if (!isEdit) 'password',
       'nip',
       'nama',
       'jenis_kelamin',
@@ -866,6 +1162,41 @@ class AdminDashboardPage extends GetView<AdminController> {
     }
     return value;
   }
+}
+
+class _RecapLateBadge extends StatelessWidget {
+  final dynamic value;
+
+  const _RecapLateBadge({required this.value});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+    decoration: BoxDecoration(
+      color: AppColor.warning.withValues(alpha: .1),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: AppColor.warning.withValues(alpha: .3)),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(
+          Icons.warning_amber_rounded,
+          size: 16,
+          color: AppColor.warning,
+        ),
+        const SizedBox(width: 5),
+        Text(
+          'Terlambat $value',
+          style: const TextStyle(
+            color: AppColor.warning,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _HoverNavigationTile extends StatefulWidget {

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_color.dart';
+
 class AttendanceStatusCard extends StatelessWidget {
   final String status;
 
@@ -14,6 +16,8 @@ class AttendanceStatusCard extends StatelessWidget {
         return Colors.orange;
 
       case "belum_checkin":
+        return AppColor.secondary;
+
       default:
         return Colors.red;
     }
@@ -39,7 +43,13 @@ class AttendanceStatusCard extends StatelessWidget {
         padding: const EdgeInsets.all(25),
         child: Column(
           children: [
-            Icon(Icons.fingerprint, color: statusColor, size: 45),
+            Icon(
+              status.toLowerCase() == 'belum_checkin'
+                  ? Icons.schedule_outlined
+                  : Icons.fingerprint,
+              color: statusColor,
+              size: 45,
+            ),
             const SizedBox(height: 10),
             Text(
               statusText,

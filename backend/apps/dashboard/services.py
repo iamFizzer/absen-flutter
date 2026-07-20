@@ -11,7 +11,11 @@ from apps.master.models import Shift
 class DashboardService:
     @staticmethod
     def dashboard(user):
-        employee = Employee.objects.select_related("office").filter(user=user).first()
+        employee = (
+            Employee.objects.select_related("office", "face")
+            .filter(user=user)
+            .first()
+        )
         if employee is None:
             return None
 
@@ -55,6 +59,11 @@ class DashboardService:
         return {
             "nama": employee.nama,
             "jabatan": employee.jabatan,
+            "face_image": (
+                employee.face.image.url
+                if hasattr(employee, "face") and employee.face.image
+                else None
+            ),
             "office": employee.office.nama,
             "shift": shift.nama if shift else "Belum diatur",
             "jam_masuk": shift.jam_masuk if shift else None,

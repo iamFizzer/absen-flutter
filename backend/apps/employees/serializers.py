@@ -40,6 +40,17 @@ class EmployeeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Username sudah digunakan.")
         return value
 
+    def validate(self, attrs):
+        if self.instance:
+            restricted = {
+                field: "Gunakan menu khusus untuk mengubah data akun."
+                for field in ("username", "password")
+                if field in self.initial_data
+            }
+            if restricted:
+                raise serializers.ValidationError(restricted)
+        return super().validate(attrs)
+
     @transaction.atomic
     def create(self, validated_data):
         user_data = validated_data.pop("user")
@@ -55,12 +66,20 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        user_data = validated_data.pop("user", None)
-        password = validated_data.pop("password", None)
-        if user_data:
-            instance.user.username = user_data["username"]
-        if password:
-            instance.user.set_password(password)
+        validated_data.pop("user", None)
+        validated_data.pop("password", None)
         instance.user.email = validated_data.get("email", instance.email)
         instance.user.save()
         return super().update(instance, validated_data)
+
+
+class EmployeePasswordSerializer(serializers.Serializer):
+    password = serializers.CharField(write_only=True, min_length=6)
+    password_confirmation = serializers.CharField(write_only=True, min_length=6)
+
+    def validate(self, attrs):
+        if attrs["password"] != attrs["password_confirmation"]:
+            raise serializers.ValidationError(
+                {"password_confirmation": "Konfirmasi password tidak sama."}
+            )
+        return attrs

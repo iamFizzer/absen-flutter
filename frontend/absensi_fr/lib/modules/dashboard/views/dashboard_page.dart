@@ -34,6 +34,7 @@ class DashboardPage extends GetView<DashboardController> {
                     child: DashboardHeader(
                       nama: data.nama,
                       jabatan: data.jabatan,
+                      faceImage: data.faceImage,
                       onLogout: () => _logout(context),
                     ),
                   ),
@@ -326,9 +327,13 @@ class _MonthlyHistory extends StatelessWidget {
                     Icon(
                       item.status == 'alpa'
                           ? Icons.cancel_outlined
+                          : item.status == 'belum_checkin'
+                          ? Icons.schedule_outlined
                           : Icons.check_circle_outline,
                       color: item.status == 'alpa'
                           ? AppColor.danger
+                          : item.status == 'belum_checkin'
+                          ? AppColor.secondary
                           : AppColor.success,
                     ),
                     const SizedBox(width: 12),
@@ -358,7 +363,12 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final danger = status == 'alpa';
-    final color = danger ? AppColor.danger : AppColor.success;
+    final pending = status == 'belum_checkin';
+    final color = danger
+        ? AppColor.danger
+        : pending
+        ? AppColor.secondary
+        : AppColor.success;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(

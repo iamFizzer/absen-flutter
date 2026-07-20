@@ -24,6 +24,11 @@ class DashboardView(APIView):
                 "message": "Data pegawai tidak ditemukan."
             }, status=404)
 
+        if dashboard.get("face_image"):
+            dashboard["face_image"] = request.build_absolute_uri(
+                dashboard["face_image"]
+            )
+
         serializer = DashboardSerializer(
             dashboard
         )

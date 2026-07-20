@@ -5,6 +5,7 @@ from apps.attendance.serializers import AttendanceHistorySerializer
 class DashboardSerializer(serializers.Serializer):
     nama = serializers.CharField()
     jabatan = serializers.CharField()
+    face_image = serializers.URLField(allow_null=True)
     office = serializers.CharField()
     shift = serializers.CharField()
     jam_masuk = serializers.TimeField(allow_null=True, format="%H:%M")

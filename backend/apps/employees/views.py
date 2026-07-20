@@ -7,7 +7,7 @@ from apps.recognition.models import FaceData
 from apps.common.exports import excel_response, pdf_response
 from apps.recognition.serializers import RegisterFaceSerializer
 from .models import Employee
-from .serializers import EmployeeSerializer
+from .serializers import EmployeePasswordSerializer, EmployeeSerializer
 
 
 class EmployeeViewSet(viewsets.ModelViewSet):
@@ -16,6 +16,18 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         "-updated_at", "-id"
     )
     serializer_class = EmployeeSerializer
+
+    @action(detail=True, methods=["post"], url_path="change-password")
+    def change_password(self, request, pk=None):
+        employee = self.get_object()
+        serializer = EmployeePasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        employee.user.set_password(serializer.validated_data["password"])
+        employee.user.save(update_fields=["password"])
+        return Response(
+            {"message": "Password pegawai berhasil diubah."},
+            status=status.HTTP_200_OK,
+        )
 
     @action(detail=False, methods=["get"], url_path="export")
     def export(self, request):
