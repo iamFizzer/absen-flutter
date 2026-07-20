@@ -115,10 +115,7 @@ class AdminDashboardPage extends GetView<AdminController> {
           _HoverNavigationTile(
             icon: Icons.logout,
             label: 'Keluar',
-            onTap: () async {
-              await SessionService.logout();
-              Get.offAllNamed(AppRoutes.login);
-            },
+            onTap: () => _confirmLogout(context),
           ),
         ],
       ),
@@ -529,7 +526,10 @@ class AdminDashboardPage extends GetView<AdminController> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Hapus data?'),
-        content: const Text('Data yang dihapus tidak dapat dikembalikan.'),
+        content: Text(
+          'Hapus "${item['nama'] ?? item['nip'] ?? 'data ini'}"? '
+          'Data yang sudah dihapus tidak dapat dikembalikan.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -543,6 +543,40 @@ class AdminDashboardPage extends GetView<AdminController> {
       ),
     );
     if (yes == true) await controller.remove(type, item['id']);
+  }
+
+  Future<void> _confirmLogout(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        icon: const Icon(Icons.logout, color: AppColor.danger, size: 36),
+        title: const Text('Keluar dari akun?'),
+        content: const Text(
+          'Session admin akan dihapus dan Anda perlu login kembali.',
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(context, true),
+            icon: const Icon(Icons.logout),
+            label: const Text('Ya, keluar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    await SessionService.logout();
+    Get.offAllNamed(AppRoutes.login);
+    Get.snackbar(
+      'Berhasil keluar',
+      'Session Anda sudah dihapus.',
+      snackPosition: SnackPosition.BOTTOM,
+    );
   }
 
   Future<void> _showForm(

@@ -106,6 +106,11 @@ class DashboardPage extends GetView<DashboardController> {
     if (confirmed == true) {
       await SessionService.logout();
       Get.offAllNamed(AppRoutes.login);
+      Get.snackbar(
+        'Berhasil keluar',
+        'Session Anda sudah dihapus.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
   }
 }

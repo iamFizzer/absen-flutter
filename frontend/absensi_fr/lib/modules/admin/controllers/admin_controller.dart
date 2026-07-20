@@ -53,6 +53,11 @@ class AdminController extends GetxController {
     try {
       await AdminService.delete(type, id);
       data[type] = await AdminService.list(type);
+      Get.snackbar(
+        'Data berhasil dihapus',
+        'Daftar data sudah diperbarui.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } catch (e) {
       Get.snackbar('Data gagal dihapus', AdminService.errorMessage(e));
     }
