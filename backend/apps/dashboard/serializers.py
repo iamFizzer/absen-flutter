@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from apps.attendance.serializers import AttendanceHistorySerializer
 
 
 class DashboardSerializer(serializers.Serializer):
@@ -13,3 +14,5 @@ class DashboardSerializer(serializers.Serializer):
     status = serializers.CharField()
     hadir_bulan_ini = serializers.IntegerField()
     terlambat_bulan_ini = serializers.IntegerField()
+    durasi_kerja_menit = serializers.IntegerField()
+    history_bulan_ini = AttendanceHistorySerializer(many=True)

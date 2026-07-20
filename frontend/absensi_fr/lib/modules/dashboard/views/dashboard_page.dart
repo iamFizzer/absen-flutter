@@ -48,8 +48,10 @@ class DashboardPage extends GetView<DashboardController> {
                       child: Center(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 1050),
-                          child: wide
-                              ? Row(
+                          child: Column(
+                            children: [
+                              if (wide)
+                                Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Expanded(
@@ -63,13 +65,15 @@ class DashboardPage extends GetView<DashboardController> {
                                     ),
                                   ],
                                 )
-                              : Column(
-                                  children: [
-                                    _TodayCard(data: data),
-                                    const SizedBox(height: 20),
-                                    _Summary(data: data),
-                                  ],
-                                ),
+                              else ...[
+                                _TodayCard(data: data),
+                                const SizedBox(height: 20),
+                                _Summary(data: data),
+                              ],
+                              const SizedBox(height: 24),
+                              _MonthlyHistory(data: data),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -170,6 +174,35 @@ class _TodayCard extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 18),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColor.primarySoft,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.timelapse_rounded, color: AppColor.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Durasi kerja hari ini',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        Text(
+                          _duration(data.durasiKerjaMenit),
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 24),
             Wrap(
               spacing: 12,
@@ -229,6 +262,115 @@ class _TodayCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  String _duration(int minutes) {
+    final hours = minutes ~/ 60;
+    final remaining = minutes % 60;
+    if (hours == 0) return '$remaining menit';
+    return '$hours jam $remaining menit';
+  }
+}
+
+class _MonthlyHistory extends StatelessWidget {
+  final DashboardModel data;
+  const _MonthlyHistory({required this.data});
+
+  @override
+  Widget build(BuildContext context) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.calendar_month_outlined,
+                color: AppColor.primary,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Rekap Kehadiran Bulan Berjalan',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (data.historyBulanIni.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text('Belum ada rekap kehadiran bulan ini.'),
+              ),
+            )
+          else
+            ...data.historyBulanIni.map(
+              (item) => Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColor.surfaceMuted,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      item.status == 'alpa'
+                          ? Icons.cancel_outlined
+                          : Icons.check_circle_outline,
+                      color: item.status == 'alpa'
+                          ? AppColor.danger
+                          : AppColor.success,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        item.tanggal,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    Text('${item.checkIn ?? '-'} — ${item.checkOut ?? '-'}'),
+                    const SizedBox(width: 14),
+                    _StatusBadge(status: item.status),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _StatusBadge extends StatelessWidget {
+  final String status;
+  const _StatusBadge({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final danger = status == 'alpa';
+    final color = danger ? AppColor.danger : AppColor.success;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        status.replaceAll('_', ' ').toUpperCase(),
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

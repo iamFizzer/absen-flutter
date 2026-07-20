@@ -148,9 +148,11 @@ class AttendanceController extends GetxController {
 
       if (result["success"] == true) {
         photo.value = null;
-        await loadAttendance();
-        await loadHistory();
-        Get.snackbar("Berhasil", result["message"] ?? "Presensi berhasil.");
+        Get.back(result: true);
+        Get.snackbar(
+          "Berhasil",
+          '${result["message"] ?? "Presensi berhasil."} Anda kembali ke Home.',
+        );
       } else {
         Get.snackbar(
           "Presensi gagal",

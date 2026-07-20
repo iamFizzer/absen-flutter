@@ -13,6 +13,14 @@ class DashboardHeader extends StatelessWidget {
     required this.onLogout,
   });
 
+  String get greeting {
+    final hour = DateTime.now().hour;
+    if (hour < 11) return 'Selamat pagi';
+    if (hour < 15) return 'Selamat siang';
+    if (hour < 18) return 'Selamat sore';
+    return 'Selamat malam';
+  }
+
   @override
   Widget build(BuildContext context) => Container(
     width: double.infinity,
@@ -56,7 +64,7 @@ class DashboardHeader extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Halo, $nama',
+                        '$greeting, $nama',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(

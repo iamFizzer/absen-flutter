@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.utils import timezone
 
 from apps.attendance.models import Attendance
@@ -33,6 +35,23 @@ class DashboardService:
         else:
             status = "selesai"
 
+        duration_minutes = 0
+        if attendance and attendance.jam_masuk:
+            started_at = timezone.make_aware(
+                datetime.combine(today, attendance.jam_masuk)
+            )
+            finished_at = (
+                timezone.make_aware(datetime.combine(today, attendance.jam_pulang))
+                if attendance.jam_pulang
+                else timezone.localtime()
+            )
+            duration_minutes = max(
+                0,
+                int((finished_at - started_at).total_seconds() // 60),
+            )
+
+        history = AttendanceService.history(user, today.year, today.month) or []
+
         return {
             "nama": employee.nama,
             "jabatan": employee.jabatan,
@@ -47,4 +66,6 @@ class DashboardService:
                 status__in=["hadir", "terlambat"]
             ).count(),
             "terlambat_bulan_ini": month_records.filter(status="terlambat").count(),
+            "durasi_kerja_menit": duration_minutes,
+            "history_bulan_ini": history,
         }

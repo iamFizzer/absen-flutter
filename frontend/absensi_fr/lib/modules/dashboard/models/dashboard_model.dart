@@ -1,3 +1,5 @@
+import '../../attendance/models/attendance_history_model.dart';
+
 class DashboardModel {
   final String nama;
   final String jabatan;
@@ -10,6 +12,8 @@ class DashboardModel {
   final String status;
   final int hadirBulanIni;
   final int terlambatBulanIni;
+  final int durasiKerjaMenit;
+  final List<AttendanceHistoryModel> historyBulanIni;
 
   const DashboardModel({
     required this.nama,
@@ -23,6 +27,8 @@ class DashboardModel {
     required this.status,
     required this.hadirBulanIni,
     required this.terlambatBulanIni,
+    required this.durasiKerjaMenit,
+    required this.historyBulanIni,
   });
 
   factory DashboardModel.fromJson(Map<String, dynamic> json) {
@@ -38,6 +44,14 @@ class DashboardModel {
       status: json["status"] ?? "belum_checkin",
       hadirBulanIni: json["hadir_bulan_ini"] ?? 0,
       terlambatBulanIni: json["terlambat_bulan_ini"] ?? 0,
+      durasiKerjaMenit: json["durasi_kerja_menit"] ?? 0,
+      historyBulanIni: (json["history_bulan_ini"] as List? ?? [])
+          .map(
+            (item) => AttendanceHistoryModel.fromJson(
+              Map<String, dynamic>.from(item),
+            ),
+          )
+          .toList(),
     );
   }
 }
