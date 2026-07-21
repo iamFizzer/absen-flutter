@@ -57,9 +57,17 @@ class AttendancePage extends GetView<AttendanceController> {
                       checkIn: attendance.checkIn,
                       checkOut: attendance.checkOut,
                     );
-                    final location = Obx(
-                      () => _LocationCard(controller: controller),
-                    );
+                    final location = Obx(() {
+                      // Register every location value in this observer. The
+                      // child widget is built in a later Flutter build phase.
+                      controller.isLocationLoading.value;
+                      controller.locationError.value;
+                      controller.isInsideOffice.value;
+                      controller.distance.value;
+                      controller.latitude.value;
+                      controller.longitude.value;
+                      return _LocationCard(controller: controller);
+                    });
                     if (!desktop) {
                       return Column(
                         children: [
@@ -80,7 +88,16 @@ class AttendancePage extends GetView<AttendanceController> {
                   },
                 ),
                 const SizedBox(height: 18),
-                Obx(() => _AttendanceAction(controller: controller)),
+                Obx(() {
+                  // Register action state here instead of relying on reads in
+                  // the child widget's later build phase.
+                  controller.photo.value;
+                  controller.isUploading.value;
+                  controller.isLocationLoading.value;
+                  controller.isInsideOffice.value;
+                  controller.attendance.value;
+                  return _AttendanceAction(controller: controller);
+                }),
                 const SizedBox(height: 24),
                 _SectionTitle(
                   icon: Icons.history_outlined,
