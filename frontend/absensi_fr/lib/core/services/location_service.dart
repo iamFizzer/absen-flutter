@@ -69,6 +69,12 @@ class LocationService {
         ),
       ).timeout(_positionTimeout);
     } on TimeoutException {
+      // getLastKnownPosition is not implemented by geolocator_web.
+      if (kIsWeb) {
+        throw TimeoutException(
+          'Browser tidak berhasil memperoleh lokasi. Pastikan lokasi perangkat aktif lalu coba lagi.',
+        );
+      }
       position = await Geolocator.getLastKnownPosition().timeout(
         _permissionTimeout,
         onTimeout: () => null,

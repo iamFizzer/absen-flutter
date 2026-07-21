@@ -41,6 +41,8 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
-  <script src="flutter_bootstrap.js" async></script>
+  <!-- Query version prevents an obsolete Flutter service worker from serving
+       a cached bootstrap after a new deployment. -->
+  <script src="flutter_bootstrap.js?v=20260721-2" async></script>
 </body>
 </html>

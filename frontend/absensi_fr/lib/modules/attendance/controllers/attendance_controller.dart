@@ -89,9 +89,17 @@ class AttendanceController extends GetxController {
   Future<void> loadLocation() async {
     if (isLocationLoading.value) return;
     isLocationLoading.value = true;
+    isInsideOffice.value = false;
     locationError.value = null;
     try {
-      final location = await LocationService.getCurrentLocation();
+      // Controller-level watchdog ensures the UI can never remain spinning,
+      // even if a browser implementation leaves a permission promise pending.
+      final location = await LocationService.getCurrentLocation().timeout(
+        const Duration(seconds: 25),
+        onTimeout: () => throw TimeoutException(
+          'Pengambilan lokasi terlalu lama. Periksa izin lokasi browser lalu coba lagi.',
+        ),
+      );
       if (location == null || attendance.value == null) return;
       latitude.value = location.latitude;
       longitude.value = location.longitude;
