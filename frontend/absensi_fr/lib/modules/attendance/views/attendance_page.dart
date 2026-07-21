@@ -57,7 +57,9 @@ class AttendancePage extends GetView<AttendanceController> {
                       checkIn: attendance.checkIn,
                       checkOut: attendance.checkOut,
                     );
-                    final location = _LocationCard(controller: controller);
+                    final location = Obx(
+                      () => _LocationCard(controller: controller),
+                    );
                     if (!desktop) {
                       return Column(
                         children: [
@@ -78,7 +80,7 @@ class AttendancePage extends GetView<AttendanceController> {
                   },
                 ),
                 const SizedBox(height: 18),
-                _AttendanceAction(controller: controller),
+                Obx(() => _AttendanceAction(controller: controller)),
                 const SizedBox(height: 24),
                 _SectionTitle(
                   icon: Icons.history_outlined,
