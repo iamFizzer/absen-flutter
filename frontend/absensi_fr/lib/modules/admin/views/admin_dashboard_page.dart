@@ -8,6 +8,7 @@ import '../../../core/theme/app_color.dart';
 import '../../../core/widgets/live_clock.dart';
 import '../controllers/admin_controller.dart';
 import '../models/business_intelligence_model.dart';
+import 'dart:ui' as ui;
 
 class AdminDashboardPage extends GetView<AdminController> {
   const AdminDashboardPage({super.key});
@@ -1626,7 +1627,7 @@ class _BiTrendPainter extends CustomPainter {
           text: item.label,
           style: const TextStyle(fontSize: 11, color: AppColor.textMuted),
         ),
-        textDirection: TextDirection.ltr,
+        textDirection: ui.TextDirection.ltr,
       )..layout(maxWidth: barWidth + 18);
       textPainter.paint(canvas, Offset(x - 4, bottom + 6));
     }
