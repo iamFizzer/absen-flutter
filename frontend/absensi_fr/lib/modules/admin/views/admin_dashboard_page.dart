@@ -617,42 +617,60 @@ class AdminDashboardPage extends GetView<AdminController> {
           subtitle: Text(
             '${itemSubtitle ?? ''}\nTerakhir diperbarui: $lastUpdate',
           ),
-          trailing: PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'edit') {
-                _showForm(context, type, item: item);
-              } else if (value == 'password') {
-                _showPasswordForm(context, item);
-              } else if (value == 'view-face') {
-                _showFace(context, item);
-              } else if (value == 'face') {
-                _selectFace(item['id'] as int);
-              } else {
-                _confirmDelete(context, type, item);
-              }
-            },
-            itemBuilder: (_) => [
-              const PopupMenuItem(value: 'edit', child: Text('Edit')),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
               if (type == 'employees')
-                const PopupMenuItem(
-                  value: 'password',
-                  child: Text('Ubah password'),
-                ),
-              if (hasFace)
-                const PopupMenuItem(
-                  value: 'view-face',
-                  child: Text('Lihat wajah'),
-                ),
-              if (type == 'employees')
-                PopupMenuItem(
-                  value: 'face',
-                  child: Text(
+                IconButton(
+                  tooltip: hasFace
+                      ? 'Ganti foto identifikasi'
+                      : 'Upload foto identifikasi',
+                  onPressed: () => _selectFace(item['id'] as int),
+                  icon: Icon(
                     hasFace
-                        ? 'Ganti foto identifikasi'
-                        : 'Tambah foto identifikasi',
+                        ? Icons.add_a_photo_outlined
+                        : Icons.camera_alt_outlined,
+                    color: AppColor.primary,
                   ),
                 ),
-              const PopupMenuItem(value: 'delete', child: Text('Hapus')),
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    _showForm(context, type, item: item);
+                  } else if (value == 'password') {
+                    _showPasswordForm(context, item);
+                  } else if (value == 'view-face') {
+                    _showFace(context, item);
+                  } else if (value == 'face') {
+                    _selectFace(item['id'] as int);
+                  } else {
+                    _confirmDelete(context, type, item);
+                  }
+                },
+                itemBuilder: (_) => [
+                  const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                  if (type == 'employees')
+                    const PopupMenuItem(
+                      value: 'password',
+                      child: Text('Ubah password'),
+                    ),
+                  if (hasFace)
+                    const PopupMenuItem(
+                      value: 'view-face',
+                      child: Text('Lihat wajah'),
+                    ),
+                  if (type == 'employees')
+                    PopupMenuItem(
+                      value: 'face',
+                      child: Text(
+                        hasFace
+                            ? 'Ganti foto identifikasi'
+                            : 'Tambah foto identifikasi',
+                      ),
+                    ),
+                  const PopupMenuItem(value: 'delete', child: Text('Hapus')),
+                ],
+              ),
             ],
           ),
         ),
@@ -703,13 +721,28 @@ class AdminDashboardPage extends GetView<AdminController> {
   }
 
   Future<void> _selectFace(int employeeId) async {
-    final image = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
-      maxWidth: 1200,
-    );
-    if (image != null) {
+    try {
+      final image = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1200,
+      );
+      if (image == null) return;
+
+      final size = await image.length();
+      if (size > 10 * 1024 * 1024) {
+        Get.snackbar(
+          'Foto terlalu besar',
+          'Gunakan foto berukuran maksimal 10 MB.',
+        );
+        return;
+      }
       await controller.uploadEmployeeFace(employeeId, image);
+    } catch (_) {
+      Get.snackbar(
+        'Foto tidak dapat dipilih',
+        'Browser memblokir pemilih file. Coba gunakan tombol kamera pada baris pegawai.',
+      );
     }
   }
 
