@@ -258,12 +258,15 @@ class _LocationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final inside = controller.isInsideOffice.value;
     final loading = controller.isLocationLoading.value;
-    final color = inside ? AppColor.success : AppColor.danger;
-    final description = inside
-        ? 'Anda berada dalam radius kantor.'
-        : AppConfig.enforceAttendanceRadius
-        ? 'Anda berada di luar radius kantor.'
-        : 'Di luar radius (mode development).';
+    final error = controller.locationError.value;
+    final color = error == null && inside ? AppColor.success : AppColor.danger;
+    final description =
+        error ??
+        (inside
+            ? 'Anda berada dalam radius kantor.'
+            : AppConfig.enforceAttendanceRadius
+            ? 'Anda berada di luar radius kantor.'
+            : 'Di luar radius (mode development).');
 
     return Card(
       margin: EdgeInsets.zero,
@@ -320,7 +323,9 @@ class _LocationCard extends StatelessWidget {
               style: Theme.of(context).textTheme.bodySmall,
             ),
             Text(
-              '${controller.distance.value.toStringAsFixed(1)} meter',
+              error == null
+                  ? '${controller.distance.value.toStringAsFixed(1)} meter'
+                  : '-',
               style: Theme.of(
                 context,
               ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),

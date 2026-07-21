@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -38,7 +40,9 @@ class _CameraCapturePageState extends State<CameraCapturePage>
 
     CameraException? lastError;
     try {
-      _cameras = await CameraService.getCameras();
+      _cameras = await CameraService.getCameras().timeout(
+        const Duration(seconds: 12),
+      );
       if (_cameras.isEmpty) {
         throw CameraException('no-camera', 'Kamera tidak ditemukan.');
       }
@@ -64,7 +68,7 @@ class _CameraCapturePageState extends State<CameraCapturePage>
             imageFormatGroup: ImageFormatGroup.jpeg,
           );
           try {
-            await candidate.initialize();
+            await candidate.initialize().timeout(const Duration(seconds: 15));
             await _configureCamera(candidate);
             _controller = candidate;
             if (mounted) setState(() => _initializing = false);
@@ -85,12 +89,24 @@ class _CameraCapturePageState extends State<CameraCapturePage>
           _error = _cameraError(error);
         });
       }
-    } catch (_) {
+    } on TimeoutException {
       if (mounted) {
         setState(() {
           _initializing = false;
           _error =
-              'Webcam tidak dapat dibuka. Periksa koneksi dan izin kamera.';
+              'Kamera terlalu lama merespons. Periksa izin kamera dan pastikan tidak diblokir oleh pengaturan situs, lalu coba lagi.';
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _initializing = false;
+          final details = error.toString().toLowerCase();
+          _error =
+              details.contains('permissions policy') ||
+                  details.contains('permission policy')
+              ? 'Akses kamera diblokir oleh header Permissions-Policy situs.'
+              : 'Webcam tidak dapat dibuka. Periksa koneksi dan izin kamera.';
         });
       }
     }

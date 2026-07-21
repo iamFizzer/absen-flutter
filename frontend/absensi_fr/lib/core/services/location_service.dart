@@ -8,28 +8,43 @@ import '../models/location_model.dart';
 class LocationService {
   LocationService._();
 
+  static const _permissionTimeout = Duration(seconds: 8);
+  static const _positionTimeout = Duration(seconds: 15);
+
   /// ============================
   /// Check Permission
   /// ============================
   static Future<bool> checkPermission() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled().timeout(
+      _permissionTimeout,
+      onTimeout: () =>
+          throw TimeoutException('Pemeriksaan layanan lokasi terlalu lama.'),
+    );
 
     if (!serviceEnabled) {
-      return false;
+      throw const LocationServiceDisabledException();
     }
 
-    LocationPermission permission = await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission().timeout(
+      _permissionTimeout,
+    );
 
     if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
+      permission = await Geolocator.requestPermission().timeout(
+        _permissionTimeout,
+      );
 
       if (permission == LocationPermission.denied) {
-        return false;
+        throw const PermissionDeniedException(
+          'Izin lokasi ditolak. Izinkan lokasi untuk melakukan presensi.',
+        );
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      return false;
+      throw const PermissionDeniedException(
+        'Izin lokasi diblokir permanen. Aktifkan kembali melalui pengaturan browser atau perangkat.',
+      );
     }
 
     return true;
@@ -39,38 +54,37 @@ class LocationService {
   /// Current Location
   /// ============================
   static Future<LocationModel?> getCurrentLocation() async {
-    try {
-      final hasPermission = await checkPermission();
+    final hasPermission = await checkPermission();
 
-      if (!hasPermission) {
-        return null;
-      }
-
-      Position? position;
-      try {
-        position = await Geolocator.getCurrentPosition(
-          locationSettings: LocationSettings(
-            accuracy: kIsWeb
-                ? LocationAccuracy.medium
-                : LocationAccuracy.high,
-            timeLimit: const Duration(seconds: 10),
-          ),
-        );
-      } on TimeoutException {
-        position = await Geolocator.getLastKnownPosition();
-      }
-
-      if (position == null) {
-        return null;
-      }
-
-      return LocationModel(
-        latitude: position.latitude,
-        longitude: position.longitude,
-      );
-    } catch (_) {
+    if (!hasPermission) {
       return null;
     }
+
+    Position? position;
+    try {
+      position = await Geolocator.getCurrentPosition(
+        locationSettings: LocationSettings(
+          accuracy: kIsWeb ? LocationAccuracy.medium : LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 10),
+        ),
+      ).timeout(_positionTimeout);
+    } on TimeoutException {
+      position = await Geolocator.getLastKnownPosition().timeout(
+        _permissionTimeout,
+        onTimeout: () => null,
+      );
+    }
+
+    if (position == null) {
+      throw TimeoutException(
+        'Lokasi tidak berhasil diperoleh. Pastikan GPS aktif dan coba di area terbuka.',
+      );
+    }
+
+    return LocationModel(
+      latitude: position.latitude,
+      longitude: position.longitude,
+    );
   }
 
   /// ============================

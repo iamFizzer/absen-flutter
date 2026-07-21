@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:get/get.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/services/location_service.dart';
@@ -39,6 +42,8 @@ class AttendanceController extends GetxController {
   final isInsideOffice = false.obs;
 
   final isLocationLoading = false.obs;
+
+  final locationError = RxnString();
 
   final photo = Rxn<XFile>();
 
@@ -82,29 +87,37 @@ class AttendanceController extends GetxController {
   /// GPS
   /// ==========================
   Future<void> loadLocation() async {
+    if (isLocationLoading.value) return;
     isLocationLoading.value = true;
-
-    final location = await LocationService.getCurrentLocation();
-
-    if (location != null && attendance.value != null) {
+    locationError.value = null;
+    try {
+      final location = await LocationService.getCurrentLocation();
+      if (location == null || attendance.value == null) return;
       latitude.value = location.latitude;
-
       longitude.value = location.longitude;
-
       distance.value = LocationService.calculateDistance(
         startLatitude: latitude.value,
-
         startLongitude: longitude.value,
-
         endLatitude: attendance.value!.officeLatitude,
-
         endLongitude: attendance.value!.officeLongitude,
       );
-
       isInsideOffice.value = distance.value <= attendance.value!.radius;
+    } on LocationServiceDisabledException {
+      locationError.value = 'Layanan lokasi/GPS belum aktif.';
+    } on PermissionDeniedException catch (error) {
+      locationError.value = error.message;
+    } on TimeoutException catch (error) {
+      locationError.value = error.message ?? 'Pengambilan lokasi terlalu lama.';
+    } catch (error) {
+      final details = error.toString().toLowerCase();
+      locationError.value =
+          details.contains('permissions policy') ||
+              details.contains('permission policy')
+          ? 'Akses lokasi diblokir oleh header Permissions-Policy situs.'
+          : 'Lokasi gagal dibaca. Periksa izin browser/perangkat lalu coba lagi.';
+    } finally {
+      isLocationLoading.value = false;
     }
-
-    isLocationLoading.value = false;
   }
 
   Future<void> openCamera() async {
