@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import logging
 
 from django.utils import timezone
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
@@ -12,6 +13,9 @@ from .serializers import (
     AttendanceSubmitSerializer,
     AttendanceTodaySerializer,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 class AttendanceTodayView(APIView):
@@ -61,6 +65,15 @@ class AttendanceSubmitView(APIView):
             return Response(
                 {"success": False, "message": str(exc)},
                 status=400,
+            )
+        except Exception:
+            logger.exception("Attendance submit failed")
+            return Response(
+                {
+                    "success": False,
+                    "message": "Presensi gagal diproses. Silakan coba kembali.",
+                },
+                status=500,
             )
 
         attendance = AttendanceTodaySerializer(result["attendance"]).data

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -60,12 +62,20 @@ class AttendanceService {
         ),
       });
 
-      final response = await ApiClient.dio.post(
-        ApiEndpoint.attendanceSubmit,
-        data: formData,
-        options: Options(contentType: "multipart/form-data"),
-      );
+      final response = await ApiClient.dio
+          .post(
+            ApiEndpoint.attendanceSubmit,
+            data: formData,
+            options: Options(contentType: "multipart/form-data"),
+          )
+          .timeout(const Duration(seconds: 75));
       return Map<String, dynamic>.from(response.data);
+    } on TimeoutException {
+      return {
+        "success": false,
+        "message":
+            "Server terlalu lama memproses verifikasi wajah. Silakan coba lagi.",
+      };
     } on DioException catch (e) {
       final data = e.response?.data;
       final isTimeout =
