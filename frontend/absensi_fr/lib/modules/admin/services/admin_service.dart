@@ -13,6 +13,8 @@ class AdminService {
     'attendance_recap': '/attendance/monthly-recap/',
   };
 
+  static const businessIntelligenceEndpoint = '/dashboard/business-intelligence/';
+
   static Future<List<Map<String, dynamic>>> list(
     String type, {
     Map<String, dynamic>? queryParameters,
@@ -81,6 +83,24 @@ class AdminService {
       format,
       queryParameters: {'start_date': startText, 'end_date': endText},
     );
+  }
+
+  static Future<Map<String, dynamic>> businessIntelligence({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    final response = await ApiClient.dio.get(
+      businessIntelligenceEndpoint,
+      queryParameters: {
+        if (startDate != null) 'start_date': dateText(startDate),
+        if (endDate != null) 'end_date': dateText(endDate),
+      },
+    );
+    final data = response.data;
+    if (data is Map && data['success'] == true) {
+      return Map<String, dynamic>.from(data['data'] as Map);
+    }
+    throw Exception('Gagal memuat dashboard BI.');
   }
 
   static Future<void> _download(

@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import '../models/business_intelligence_model.dart';
 import '../services/admin_service.dart';
 
 class AdminController extends GetxController {
@@ -7,9 +8,13 @@ class AdminController extends GetxController {
   final isLoading = true.obs;
   final error = RxnString();
   final data = <String, List<Map<String, dynamic>>>{}.obs;
+  final businessIntelligence = Rxn<BusinessIntelligenceModel>();
+  final isBusinessIntelligenceLoading = false.obs;
   final recapMonth = DateTime(DateTime.now().year, DateTime.now().month).obs;
   final recapStart = DateTime(DateTime.now().year, DateTime.now().month, 1).obs;
   final recapEnd = DateTime.now().obs;
+  final biStart = DateTime.now().subtract(const Duration(days: 29)).obs;
+  final biEnd = DateTime.now().obs;
 
   @override
   void onInit() {
@@ -25,6 +30,7 @@ class AdminController extends GetxController {
         AdminService.endpoints.keys.map(AdminService.list),
       );
       data.assignAll(Map.fromIterables(AdminService.endpoints.keys, values));
+      await loadBusinessIntelligence(showLoading: false);
       isLoading.value = false;
     } catch (e) {
       error.value = AdminService.errorMessage(e);
@@ -143,5 +149,26 @@ class AdminController extends GetxController {
     } catch (e) {
       Get.snackbar('Download gagal', AdminService.errorMessage(e));
     }
+  }
+
+  Future<void> loadBusinessIntelligence({bool showLoading = true}) async {
+    if (showLoading) isBusinessIntelligenceLoading.value = true;
+    try {
+      final result = await AdminService.businessIntelligence(
+        startDate: biStart.value,
+        endDate: biEnd.value,
+      );
+      businessIntelligence.value = BusinessIntelligenceModel.fromJson(result);
+    } catch (e) {
+      Get.snackbar('Dashboard BI gagal dimuat', AdminService.errorMessage(e));
+    } finally {
+      if (showLoading) isBusinessIntelligenceLoading.value = false;
+    }
+  }
+
+  Future<void> setBusinessIntelligenceRange(DateTime start, DateTime end) async {
+    biStart.value = start;
+    biEnd.value = end;
+    await loadBusinessIntelligence();
   }
 }

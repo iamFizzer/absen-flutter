@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import DashboardView
+from .views import BusinessIntelligenceView, DashboardView
 
 urlpatterns = [
 
@@ -8,6 +8,11 @@ urlpatterns = [
         "",
         DashboardView.as_view(),
         name="dashboard",
+    ),
+    path(
+        "business-intelligence/",
+        BusinessIntelligenceView.as_view(),
+        name="business-intelligence",
     ),
 
 ]

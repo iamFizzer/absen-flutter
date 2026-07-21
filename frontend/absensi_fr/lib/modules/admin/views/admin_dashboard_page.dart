@@ -7,6 +7,7 @@ import '../../../core/session/session_service.dart';
 import '../../../core/theme/app_color.dart';
 import '../../../core/widgets/live_clock.dart';
 import '../controllers/admin_controller.dart';
+import '../models/business_intelligence_model.dart';
 
 class AdminDashboardPage extends GetView<AdminController> {
   const AdminDashboardPage({super.key});
@@ -16,6 +17,7 @@ class AdminDashboardPage extends GetView<AdminController> {
     'shifts': 'Shift',
     'holidays': 'Hari Libur',
     'attendance_recap': 'Rekap Absensi',
+    'business_intelligence': 'BI Dashboard',
   };
   static const icons = {
     'employees': Icons.people_outline,
@@ -23,6 +25,7 @@ class AdminDashboardPage extends GetView<AdminController> {
     'shifts': Icons.schedule_outlined,
     'holidays': Icons.event_outlined,
     'attendance_recap': Icons.fact_check_outlined,
+    'business_intelligence': Icons.insights_outlined,
   };
 
   @override
@@ -179,6 +182,9 @@ class AdminDashboardPage extends GetView<AdminController> {
       );
     }
     final type = controller.selected.value;
+    if (type == 'business_intelligence') {
+      return _businessIntelligence(context);
+    }
     final items = controller.data[type] ?? [];
     if (type == 'attendance_recap') {
       return _attendanceRecap(context, items);
@@ -245,6 +251,320 @@ class AdminDashboardPage extends GetView<AdminController> {
           ...items.map((item) => _item(context, type, item)),
       ],
     );
+  }
+
+  Widget _businessIntelligence(BuildContext context) {
+    final data = controller.businessIntelligence.value;
+    if (controller.isBusinessIntelligenceLoading.value || data == null) {
+      return ListView(
+        padding: const EdgeInsets.all(20),
+        children: const [
+          SizedBox(height: 160),
+          Center(child: CircularProgressIndicator()),
+        ],
+      );
+    }
+    final summary = data.summary;
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        _biToolbar(context, data.period),
+        const SizedBox(height: 14),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            _biMetric(
+              'Tingkat Hadir',
+              '${summary.attendanceRate.toStringAsFixed(1)}%',
+              '${summary.presentCount}/${summary.expectedPresence} target',
+              Icons.trending_up,
+              AppColor.success,
+            ),
+            _biMetric(
+              'Terlambat',
+              '${summary.lateRate.toStringAsFixed(1)}%',
+              '${summary.lateCount} kejadian',
+              Icons.warning_amber_rounded,
+              AppColor.warning,
+            ),
+            _biMetric(
+              'Selesai Pulang',
+              '${summary.completionRate.toStringAsFixed(1)}%',
+              '${summary.checkedOutToday} checkout hari ini',
+              Icons.logout_rounded,
+              AppColor.primary,
+            ),
+            _biMetric(
+              'Belum Check-in',
+              summary.notCheckedInToday.toString(),
+              '${summary.activeEmployees} pegawai aktif',
+              Icons.person_off_outlined,
+              AppColor.danger,
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final desktop = constraints.maxWidth >= 900;
+            final trend = _biTrendCard(context, data.dailyTrend);
+            final status = _biStatusCard(context, data.statusBreakdown);
+            if (!desktop) {
+              return Column(children: [trend, const SizedBox(height: 14), status]);
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 2, child: trend),
+                const SizedBox(width: 14),
+                Expanded(child: status),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final desktop = constraints.maxWidth >= 900;
+            final offices = _biOfficeCard(context, data.officePerformance);
+            final attention = _biAttentionCard(context, data.attentionList);
+            if (!desktop) {
+              return Column(children: [offices, const SizedBox(height: 14), attention]);
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: offices),
+                const SizedBox(width: 14),
+                Expanded(child: attention),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _biToolbar(BuildContext context, BusinessIntelligencePeriod period) => Card(
+    margin: EdgeInsets.zero,
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          _sectionHeading(
+            context,
+            'Business Intelligence',
+            '${period.startDate} - ${period.endDate} (${period.workdays} hari kerja)',
+          ),
+          OutlinedButton.icon(
+            onPressed: () => _pickBiRange(context),
+            icon: const Icon(Icons.date_range_outlined),
+            label: const Text('Periode'),
+          ),
+          IconButton(
+            tooltip: 'Muat ulang BI',
+            onPressed: controller.loadBusinessIntelligence,
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  Widget _sectionHeading(BuildContext context, String title, String subtitle) => SizedBox(
+    width: 360,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 3),
+        Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+      ],
+    ),
+  );
+
+  Widget _biMetric(
+    String label,
+    String value,
+    String subtitle,
+    IconData icon,
+    Color color,
+  ) => SizedBox(
+    width: 230,
+    child: Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: color),
+                const Spacer(),
+                Text(label, style: const TextStyle(color: AppColor.textMuted)),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(value, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 4),
+            Text(subtitle, style: const TextStyle(color: AppColor.textMuted)),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  Widget _biTrendCard(BuildContext context, List<BusinessIntelligenceDailyItem> items) => Card(
+    margin: EdgeInsets.zero,
+    child: Padding(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Tren Kehadiran Harian', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 14),
+          SizedBox(height: 230, child: _BiTrendChart(items: items)),
+        ],
+      ),
+    ),
+  );
+
+  Widget _biStatusCard(BuildContext context, List<BusinessIntelligenceStatusItem> items) {
+    final total = items.fold<int>(0, (sum, item) => sum + item.total);
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Komposisi Status', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            ...items.map((item) => _biStatusRow(item, total)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _biStatusRow(BusinessIntelligenceStatusItem item, int total) {
+    final percent = total == 0 ? 0.0 : item.total / total;
+    final color = _statusColor(item.status);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text(_titleText(item.status))),
+              Text('${item.total}'),
+            ],
+          ),
+          const SizedBox(height: 6),
+          LinearProgressIndicator(
+            value: percent,
+            minHeight: 8,
+            borderRadius: BorderRadius.circular(8),
+            color: color,
+            backgroundColor: color.withValues(alpha: .12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _biOfficeCard(BuildContext context, List<BusinessIntelligenceOfficeItem> items) => Card(
+    margin: EdgeInsets.zero,
+    child: Padding(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Performa Kantor', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 12),
+          if (items.isEmpty)
+            const Text('Belum ada data kantor.')
+          else
+            ...items.map(
+              (item) => _biOfficeRow(
+                item.office,
+                item.attendanceRate,
+                '${item.hadir} hadir, ${item.terlambat} terlambat, score ${item.averageFaceScore.toStringAsFixed(1)}',
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
+
+  Widget _biOfficeRow(String name, double rate, String subtitle) => Padding(
+    padding: const EdgeInsets.only(bottom: 13),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(child: Text(name, style: const TextStyle(fontWeight: FontWeight.w700))),
+            Text('${rate.toStringAsFixed(1)}%'),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(subtitle, style: const TextStyle(color: AppColor.textMuted, fontSize: 12)),
+        const SizedBox(height: 7),
+        LinearProgressIndicator(
+          value: (rate / 100).clamp(0, 1),
+          minHeight: 8,
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ],
+    ),
+  );
+
+  Widget _biAttentionCard(BuildContext context, List<BusinessIntelligenceAttentionItem> items) => Card(
+    margin: EdgeInsets.zero,
+    child: Padding(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Perlu Perhatian', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 12),
+          if (items.isEmpty)
+            const Text('Tidak ada anomali keterlambatan atau alpa pada periode ini.')
+          else
+            ...items.map(
+              (item) => ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.priority_high_rounded, color: AppColor.warning),
+                title: Text(item.nama, style: const TextStyle(fontWeight: FontWeight.w700)),
+                subtitle: Text('${item.office} - ${item.jabatan}'),
+                trailing: Text('${item.terlambat} TL / ${item.alpa} A'),
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
+
+  Future<void> _pickBiRange(BuildContext context) async {
+    final selected = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      initialDateRange: DateTimeRange(
+        start: controller.biStart.value,
+        end: controller.biEnd.value,
+      ),
+    );
+    if (selected != null) {
+      await controller.setBusinessIntelligenceRange(selected.start, selected.end);
+    }
   }
 
   Widget _attendanceRecap(
@@ -1230,6 +1550,115 @@ class _RecapLateBadge extends StatelessWidget {
       ],
     ),
   );
+}
+
+class _BiTrendChart extends StatelessWidget {
+  final List<BusinessIntelligenceDailyItem> items;
+
+  const _BiTrendChart({required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    final maxValue = items.fold<int>(0, (max, item) {
+      final value = item.hadir + item.terlambat + item.izin + item.alpa;
+      return value > max ? value : max;
+    });
+    if (items.isEmpty) {
+      return const Center(child: Text('Tidak ada data tren.'));
+    }
+    return CustomPaint(
+      painter: _BiTrendPainter(items: items, maxValue: maxValue <= 0 ? 1 : maxValue),
+      child: const SizedBox.expand(),
+    );
+  }
+}
+
+class _BiTrendPainter extends CustomPainter {
+  final List<BusinessIntelligenceDailyItem> items;
+  final int maxValue;
+
+  _BiTrendPainter({required this.items, required this.maxValue});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final barWidth = size.width / (items.length * 1.35);
+    final gap = barWidth * .35;
+    final bottom = size.height - 28;
+    final chartHeight = size.height - 40;
+    final outline = Paint()
+      ..color = AppColor.border
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final colors = [
+      AppColor.success,
+      AppColor.warning,
+      AppColor.secondary,
+      AppColor.danger,
+    ];
+    for (var i = 0; i < items.length; i++) {
+      final item = items[i];
+      final values = [item.hadir, item.terlambat, item.izin, item.alpa];
+      final x = i * (barWidth + gap) + 12;
+      double stackTop = bottom;
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(x, 0, barWidth, bottom),
+          const Radius.circular(6),
+        ),
+        outline,
+      );
+      for (var j = 0; j < values.length; j++) {
+        final value = values[j];
+        if (value <= 0) continue;
+        final height = (value / maxValue) * chartHeight;
+        final rect = RRect.fromRectAndRadius(
+          Rect.fromLTWH(x, stackTop - height, barWidth, height),
+          const Radius.circular(6),
+        );
+        canvas.drawRRect(
+          rect,
+          Paint()..color = colors[j].withValues(alpha: .88),
+        );
+        stackTop -= height;
+      }
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: item.label,
+          style: const TextStyle(fontSize: 11, color: AppColor.textMuted),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: barWidth + 18);
+      textPainter.paint(canvas, Offset(x - 4, bottom + 6));
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _BiTrendPainter oldDelegate) {
+    return oldDelegate.items != items || oldDelegate.maxValue != maxValue;
+  }
+}
+
+String _titleText(String value) => value
+    .replaceAll('_', ' ')
+    .split(' ')
+    .map((word) => word.isEmpty ? word : '${word[0].toUpperCase()}${word.substring(1)}')
+    .join(' ');
+
+Color _statusColor(String status) {
+  switch (status.toLowerCase()) {
+    case 'hadir':
+      return AppColor.success;
+    case 'terlambat':
+      return AppColor.warning;
+    case 'izin':
+    case 'sakit':
+    case 'cuti':
+      return AppColor.secondary;
+    case 'alpa':
+      return AppColor.danger;
+    default:
+      return AppColor.primary;
+  }
 }
 
 class _HoverNavigationTile extends StatefulWidget {
