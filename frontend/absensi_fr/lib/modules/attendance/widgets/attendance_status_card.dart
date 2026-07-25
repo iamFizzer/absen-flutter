@@ -1,67 +1,99 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_color.dart';
+import '../models/attendance_today_model.dart';
 
 class AttendanceStatusCard extends StatelessWidget {
-  final String status;
-
-  const AttendanceStatusCard({super.key, required this.status});
-
-  Color get statusColor {
-    switch (status.toLowerCase()) {
-      case "hadir":
-        return Colors.green;
-
-      case "terlambat":
-        return Colors.orange;
-
-      case "belum_checkin":
-        return AppColor.secondary;
-
-      default:
-        return Colors.red;
-    }
-  }
-
-  String get statusText {
-    switch (status.toLowerCase()) {
-      case "belum_checkin":
-        return "BELUM CHECK IN";
-
-      default:
-        return status.toUpperCase();
-    }
-  }
+  final AttendanceTodayModel attendance;
+  const AttendanceStatusCard({super.key, required this.attendance});
 
   @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(25),
-        child: Column(
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(22),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        colors: [AppColor.primaryDark, AppColor.primary],
+      ),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Icon(
-              status.toLowerCase() == 'belum_checkin'
-                  ? Icons.schedule_outlined
-                  : Icons.fingerprint,
-              color: statusColor,
-              size: 45,
+            const Icon(
+              Icons.fingerprint_rounded,
+              color: Colors.white,
+              size: 30,
             ),
-            const SizedBox(height: 10),
-            Text(
-              statusText,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: statusColor,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Presensi Hari Ini',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    '${attendance.tanggal} • ${attendance.office}',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: .82),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(
+              child: _Time(
+                label: 'Check In',
+                value: attendance.checkIn ?? '--:--',
+              ),
+            ),
+            Container(
+              width: 1,
+              height: 42,
+              color: Colors.white.withValues(alpha: .25),
+            ),
+            Expanded(
+              child: _Time(
+                label: 'Check Out',
+                value: attendance.checkOut ?? '--:--',
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+class _Time extends StatelessWidget {
+  final String label;
+  final String value;
+  const _Time({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      Text(
+        value,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 19,
+          fontWeight: FontWeight.w700,
+        ),
       ),
-    );
-  }
+      Text(label, style: TextStyle(color: Colors.white.withValues(alpha: .75))),
+    ],
+  );
 }

@@ -1,15 +1,23 @@
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/routes/app_routes.dart';
+import '../../../core/session/session_service.dart';
+import '../../auth/services/auth_service.dart';
 import '../models/business_intelligence_model.dart';
 import '../services/admin_service.dart';
 
 class AdminController extends GetxController {
-  final selected = 'employees'.obs;
+  final String initialSection;
+
+  AdminController({this.initialSection = 'dashboard'});
+
+  final isSidebarCollapsed = false.obs;
   final isLoading = true.obs;
   final error = RxnString();
   final data = <String, List<Map<String, dynamic>>>{}.obs;
   final businessIntelligence = Rxn<BusinessIntelligenceModel>();
   final isBusinessIntelligenceLoading = false.obs;
+  final businessIntelligenceError = RxnString();
   final recapMonth = DateTime(DateTime.now().year, DateTime.now().month).obs;
   final recapStart = DateTime(DateTime.now().year, DateTime.now().month, 1).obs;
   final recapEnd = DateTime.now().obs;
@@ -19,7 +27,28 @@ class AdminController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    loadAll();
+    initialize();
+  }
+
+  Future<void> initialize() async {
+    if (!await SessionService.isLoggedIn()) {
+      Get.offAllNamed(AppRoutes.login);
+      return;
+    }
+    var user = await SessionService.getUser();
+    user ??= await AuthService.profile();
+    if (user == null) {
+      await SessionService.logout();
+      Get.offAllNamed(AppRoutes.login);
+      return;
+    }
+    await SessionService.saveUser(user);
+    final isAdmin = user.role == 'admin' || user.role == 'superadmin';
+    if (!isAdmin) {
+      Get.offAllNamed(AppRoutes.unauthorized);
+      return;
+    }
+    await loadAll();
   }
 
   Future<void> loadAll() async {
@@ -30,15 +59,23 @@ class AdminController extends GetxController {
         AdminService.endpoints.keys.map(AdminService.list),
       );
       data.assignAll(Map.fromIterables(AdminService.endpoints.keys, values));
-      await loadBusinessIntelligence(showLoading: false);
+      if (initialSection == 'dashboard') {
+        final today = DateTime.now();
+        biStart.value = today;
+        biEnd.value = today;
+      }
+      if (initialSection == 'dashboard' ||
+          initialSection == 'business_intelligence') {
+        await loadBusinessIntelligence(showLoading: false);
+      }
       isLoading.value = false;
     } catch (e) {
       error.value = AdminService.errorMessage(e);
-      // Tetap tampilkan loading sesuai UX admin ketika data belum berhasil
-      // diterima. Tombol refresh pada header masih dapat mencoba ulang.
-      isLoading.value = true;
+      isLoading.value = false;
     }
   }
+
+  void toggleSidebar() => isSidebarCollapsed.toggle();
 
   Future<bool> save(String type, Map<String, dynamic> value, {int? id}) async {
     try {
@@ -153,6 +190,7 @@ class AdminController extends GetxController {
 
   Future<void> loadBusinessIntelligence({bool showLoading = true}) async {
     if (showLoading) isBusinessIntelligenceLoading.value = true;
+    businessIntelligenceError.value = null;
     try {
       final result = await AdminService.businessIntelligence(
         startDate: biStart.value,
@@ -160,15 +198,24 @@ class AdminController extends GetxController {
       );
       businessIntelligence.value = BusinessIntelligenceModel.fromJson(result);
     } catch (e) {
-      Get.snackbar('Dashboard BI gagal dimuat', AdminService.errorMessage(e));
+      businessIntelligenceError.value = AdminService.errorMessage(e);
     } finally {
       if (showLoading) isBusinessIntelligenceLoading.value = false;
     }
   }
 
-  Future<void> setBusinessIntelligenceRange(DateTime start, DateTime end) async {
+  Future<void> setBusinessIntelligenceRange(
+    DateTime start,
+    DateTime end,
+  ) async {
     biStart.value = start;
     biEnd.value = end;
+    await loadBusinessIntelligence();
+  }
+
+  Future<void> resetBusinessIntelligenceRange() async {
+    biStart.value = DateTime.now().subtract(const Duration(days: 29));
+    biEnd.value = DateTime.now();
     await loadBusinessIntelligence();
   }
 }

@@ -11,32 +11,52 @@ import '../models/business_intelligence_model.dart';
 import 'dart:ui' as ui;
 
 class AdminDashboardPage extends GetView<AdminController> {
-  const AdminDashboardPage({super.key});
+  final String initialSection;
+
+  const AdminDashboardPage({super.key, this.initialSection = 'dashboard'});
   static const labels = {
-    'employees': 'Pegawai',
-    'offices': 'Kantor',
+    'dashboard': 'Dashboard Admin',
+    'business_intelligence': 'Dashboard BI',
     'shifts': 'Shift',
-    'holidays': 'Hari Libur',
+    'offices': 'Lokasi Absensi',
     'attendance_recap': 'Rekap Absensi',
-    'business_intelligence': 'BI Dashboard',
+    'employees': 'Data Pegawai',
+    'holidays': 'Hari Libur',
   };
   static const icons = {
+    'dashboard': Icons.dashboard_outlined,
+    'business_intelligence': Icons.insights_outlined,
+    'attendance_recap': Icons.fact_check_outlined,
     'employees': Icons.people_outline,
     'offices': Icons.business_outlined,
     'shifts': Icons.schedule_outlined,
     'holidays': Icons.event_outlined,
-    'attendance_recap': Icons.fact_check_outlined,
-    'business_intelligence': Icons.insights_outlined,
+  };
+  static const routes = {
+    'dashboard': AppRoutes.adminDashboard,
+    'business_intelligence': AppRoutes.businessIntelligence,
+    'attendance_recap': AppRoutes.adminAttendanceRecap,
+    'employees': AppRoutes.adminEmployees,
+    'offices': AppRoutes.adminOffices,
+    'shifts': AppRoutes.adminShifts,
+    'holidays': AppRoutes.adminHolidays,
   };
 
   @override
   Widget build(BuildContext context) => Scaffold(
     body: LayoutBuilder(
       builder: (context, size) {
-        final desktop = size.maxWidth >= 800;
+        final desktop = size.maxWidth >= 700;
         return Row(
           children: [
-            if (desktop) _navigation(context, true),
+            if (desktop)
+              Obx(
+                () => _navigation(
+                  context,
+                  true,
+                  collapsed: controller.isSidebarCollapsed.value,
+                ),
+              ),
             Expanded(
               child: Column(
                 children: [
@@ -63,8 +83,13 @@ class AdminDashboardPage extends GetView<AdminController> {
     ),
   );
 
-  Widget _navigation(BuildContext context, bool desktop) => Container(
-    width: desktop ? 230 : double.infinity,
+  Widget _navigation(
+    BuildContext context,
+    bool desktop, {
+    bool collapsed = false,
+  }) => AnimatedContainer(
+    duration: const Duration(milliseconds: 180),
+    width: desktop ? (collapsed ? 76 : 240) : double.infinity,
     decoration: const BoxDecoration(
       gradient: LinearGradient(
         begin: Alignment.topCenter,
@@ -76,8 +101,11 @@ class AdminDashboardPage extends GetView<AdminController> {
       child: Column(
         children: [
           Padding(
-            padding: EdgeInsets.all(22),
+            padding: EdgeInsets.all(collapsed ? 16 : 22),
             child: Row(
+              mainAxisAlignment: collapsed
+                  ? MainAxisAlignment.center
+                  : MainAxisAlignment.start,
               children: [
                 Container(
                   width: 44,
@@ -89,15 +117,17 @@ class AdminDashboardPage extends GetView<AdminController> {
                   ),
                   child: Image.asset('assets/logo/logo-big.png'),
                 ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Presensi Admin',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 17,
+                if (!collapsed) ...[
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Presensi Admin',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 17,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -105,12 +135,15 @@ class AdminDashboardPage extends GetView<AdminController> {
           ...labels.entries.map(
             (entry) => Obx(
               () => _HoverNavigationTile(
-                selected: controller.selected.value == entry.key,
+                selected: initialSection == entry.key,
                 icon: icons[entry.key]!,
                 label: entry.value,
+                collapsed: collapsed,
                 onTap: () {
-                  controller.selected.value = entry.key;
                   if (!desktop) Navigator.pop(context);
+                  if (Get.currentRoute != routes[entry.key]) {
+                    _navigateTo(entry.key);
+                  }
                 },
               ),
             ),
@@ -119,6 +152,7 @@ class AdminDashboardPage extends GetView<AdminController> {
           _HoverNavigationTile(
             icon: Icons.logout,
             label: 'Keluar',
+            collapsed: collapsed,
             onTap: () => _confirmLogout(context),
           ),
         ],
@@ -147,12 +181,22 @@ class AdminDashboardPage extends GetView<AdminController> {
               icon: const Icon(Icons.menu),
             ),
           ),
-        Expanded(
-          child: Obx(
-            () => Text(
-              labels[controller.selected.value]!,
-              style: Theme.of(context).textTheme.titleLarge,
+        if (desktop)
+          IconButton(
+            tooltip: controller.isSidebarCollapsed.value
+                ? 'Perluas sidebar'
+                : 'Ciutkan sidebar',
+            onPressed: controller.toggleSidebar,
+            icon: Icon(
+              controller.isSidebarCollapsed.value
+                  ? Icons.last_page
+                  : Icons.first_page,
             ),
+          ),
+        Expanded(
+          child: Text(
+            labels[initialSection]!,
+            style: Theme.of(context).textTheme.titleLarge,
           ),
         ),
         const LiveClock(compact: true),
@@ -178,11 +222,32 @@ class AdminDashboardPage extends GetView<AdminController> {
       return ListView(
         children: [
           const SizedBox(height: 200),
-          Center(child: Text('Data tidak dapat dimuat')),
+          Center(
+            child: Column(
+              children: [
+                const Icon(
+                  Icons.cloud_off_outlined,
+                  size: 48,
+                  color: AppColor.textMuted,
+                ),
+                const SizedBox(height: 12),
+                const Text('Data tidak dapat dimuat'),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: controller.loadAll,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Coba lagi'),
+                ),
+              ],
+            ),
+          ),
         ],
       );
     }
-    final type = controller.selected.value;
+    final type = initialSection;
+    if (type == 'dashboard') {
+      return _adminOverview(context);
+    }
     if (type == 'business_intelligence') {
       return _businessIntelligence(context);
     }
@@ -254,14 +319,264 @@ class AdminDashboardPage extends GetView<AdminController> {
     );
   }
 
+  Widget _adminOverview(BuildContext context) {
+    final insight = controller.businessIntelligence.value;
+    final summary = insight?.summary;
+    final employees = controller.data['employees'] ?? const [];
+    final activeEmployees = employees
+        .where((item) => item['status']?.toString().toLowerCase() == 'aktif')
+        .length;
+    final shortcuts = [
+      ('employees', 'Data Pegawai', Icons.people_outline),
+      ('attendance_recap', 'Rekap Absensi', Icons.fact_check_outlined),
+      ('offices', 'Lokasi Absensi', Icons.location_on_outlined),
+      ('business_intelligence', 'Dashboard BI', Icons.insights_outlined),
+    ];
+
+    return Scrollbar(
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1320),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  FutureBuilder(
+                    future: SessionService.getUser(),
+                    builder: (context, snapshot) => Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(22),
+                        child: Wrap(
+                          spacing: 18,
+                          runSpacing: 14,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Container(
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                color: AppColor.primarySoft,
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              child: const Icon(
+                                Icons.admin_panel_settings_outlined,
+                                color: AppColor.primary,
+                              ),
+                            ),
+                            SizedBox(
+                              width: 420,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Selamat datang, ${snapshot.data?.nama ?? 'Admin'}',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.headlineSmall,
+                                  ),
+                                  Text(
+                                    '${snapshot.data?.role.toUpperCase() ?? 'ADMIN'} • Ringkasan operasional hari ini',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const LiveClock(),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      _biMetric(
+                        'Total Pegawai',
+                        employees.length.toString(),
+                        '$activeEmployees pegawai aktif',
+                        Icons.groups_outlined,
+                        AppColor.primary,
+                      ),
+                      _biMetric(
+                        'Hadir Hari Ini',
+                        (summary?.checkedInToday ?? 0).toString(),
+                        'Sudah melakukan check-in',
+                        Icons.how_to_reg_outlined,
+                        AppColor.success,
+                      ),
+                      _biMetric(
+                        'Terlambat Hari Ini',
+                        (summary?.lateCount ?? 0).toString(),
+                        'Perlu ditindaklanjuti',
+                        Icons.schedule_outlined,
+                        AppColor.warning,
+                      ),
+                      _biMetric(
+                        'Tidak Hadir',
+                        (summary?.notCheckedInToday ?? 0).toString(),
+                        'Belum melakukan check-in',
+                        Icons.person_off_outlined,
+                        AppColor.danger,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Akses Cepat',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: shortcuts
+                        .map(
+                          (item) => SizedBox(
+                            width: 245,
+                            child: Card(
+                              child: InkWell(
+                                mouseCursor: SystemMouseCursors.click,
+                                borderRadius: BorderRadius.circular(20),
+                                onTap: () => _navigateTo(item.$1),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(18),
+                                  child: Row(
+                                    children: [
+                                      Icon(item.$3, color: AppColor.primary),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          item.$2,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                      const Icon(Icons.arrow_forward_rounded),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Status Operasional',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: summary == null
+                          ? const Text(
+                              'Ringkasan hari ini belum tersedia. Gunakan tombol refresh untuk mencoba kembali.',
+                            )
+                          : Wrap(
+                              spacing: 28,
+                              runSpacing: 14,
+                              children: [
+                                _operationStatus(
+                                  'Sudah check-out',
+                                  summary.checkedOutToday,
+                                  AppColor.success,
+                                ),
+                                _operationStatus(
+                                  'Belum check-in',
+                                  summary.notCheckedInToday,
+                                  AppColor.warning,
+                                ),
+                                _operationStatus(
+                                  'Pegawai aktif',
+                                  summary.activeEmployees,
+                                  AppColor.primary,
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _operationStatus(String label, int value, Color color) => SizedBox(
+    width: 190,
+    child: Row(
+      children: [
+        CircleAvatar(
+          backgroundColor: color.withValues(alpha: .1),
+          child: Text(
+            value.toString(),
+            style: TextStyle(color: color, fontWeight: FontWeight.w700),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: Text(label)),
+      ],
+    ),
+  );
+
+  Future<void> _navigateTo(String section) async {
+    if (section == 'dashboard') {
+      final today = DateTime.now();
+      await controller.setBusinessIntelligenceRange(today, today);
+    } else if (section == 'business_intelligence') {
+      await controller.resetBusinessIntelligenceRange();
+    }
+    if (Get.currentRoute != routes[section]) {
+      await Get.toNamed(routes[section]!);
+    }
+  }
+
   Widget _businessIntelligence(BuildContext context) {
     final data = controller.businessIntelligence.value;
-    if (controller.isBusinessIntelligenceLoading.value || data == null) {
+    if (controller.isBusinessIntelligenceLoading.value) {
       return ListView(
         padding: const EdgeInsets.all(20),
         children: const [
           SizedBox(height: 160),
           Center(child: CircularProgressIndicator()),
+        ],
+      );
+    }
+    if (data == null) {
+      return ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          const SizedBox(height: 150),
+          const Icon(
+            Icons.query_stats_outlined,
+            size: 52,
+            color: AppColor.textMuted,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            controller.businessIntelligenceError.value ??
+                'Data analitik belum tersedia.',
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 14),
+          Center(
+            child: FilledButton.icon(
+              onPressed: controller.loadBusinessIntelligence,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Coba lagi'),
+            ),
+          ),
         ],
       );
     }
@@ -312,7 +627,9 @@ class AdminDashboardPage extends GetView<AdminController> {
             final trend = _biTrendCard(context, data.dailyTrend);
             final status = _biStatusCard(context, data.statusBreakdown);
             if (!desktop) {
-              return Column(children: [trend, const SizedBox(height: 14), status]);
+              return Column(
+                children: [trend, const SizedBox(height: 14), status],
+              );
             }
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -331,7 +648,9 @@ class AdminDashboardPage extends GetView<AdminController> {
             final offices = _biOfficeCard(context, data.officePerformance);
             final attention = _biAttentionCard(context, data.attentionList);
             if (!desktop) {
-              return Column(children: [offices, const SizedBox(height: 14), attention]);
+              return Column(
+                children: [offices, const SizedBox(height: 14), attention],
+              );
             }
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -347,7 +666,10 @@ class AdminDashboardPage extends GetView<AdminController> {
     );
   }
 
-  Widget _biToolbar(BuildContext context, BusinessIntelligencePeriod period) => Card(
+  Widget _biToolbar(
+    BuildContext context,
+    BusinessIntelligencePeriod period,
+  ) => Card(
     margin: EdgeInsets.zero,
     child: Padding(
       padding: const EdgeInsets.all(16),
@@ -366,6 +688,11 @@ class AdminDashboardPage extends GetView<AdminController> {
             icon: const Icon(Icons.date_range_outlined),
             label: const Text('Periode'),
           ),
+          TextButton.icon(
+            onPressed: controller.resetBusinessIntelligenceRange,
+            icon: const Icon(Icons.restart_alt),
+            label: const Text('Reset'),
+          ),
           IconButton(
             tooltip: 'Muat ulang BI',
             onPressed: controller.loadBusinessIntelligence,
@@ -376,17 +703,18 @@ class AdminDashboardPage extends GetView<AdminController> {
     ),
   );
 
-  Widget _sectionHeading(BuildContext context, String title, String subtitle) => SizedBox(
-    width: 360,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 3),
-        Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-      ],
-    ),
-  );
+  Widget _sectionHeading(BuildContext context, String title, String subtitle) =>
+      SizedBox(
+        width: 360,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 3),
+            Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
+      );
 
   Widget _biMetric(
     String label,
@@ -411,7 +739,10 @@ class AdminDashboardPage extends GetView<AdminController> {
               ],
             ),
             const SizedBox(height: 14),
-            Text(value, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
+            ),
             const SizedBox(height: 4),
             Text(subtitle, style: const TextStyle(color: AppColor.textMuted)),
           ],
@@ -420,14 +751,20 @@ class AdminDashboardPage extends GetView<AdminController> {
     ),
   );
 
-  Widget _biTrendCard(BuildContext context, List<BusinessIntelligenceDailyItem> items) => Card(
+  Widget _biTrendCard(
+    BuildContext context,
+    List<BusinessIntelligenceDailyItem> items,
+  ) => Card(
     margin: EdgeInsets.zero,
     child: Padding(
       padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Tren Kehadiran Harian', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            'Tren Kehadiran Harian',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 14),
           SizedBox(height: 230, child: _BiTrendChart(items: items)),
         ],
@@ -435,7 +772,10 @@ class AdminDashboardPage extends GetView<AdminController> {
     ),
   );
 
-  Widget _biStatusCard(BuildContext context, List<BusinessIntelligenceStatusItem> items) {
+  Widget _biStatusCard(
+    BuildContext context,
+    List<BusinessIntelligenceStatusItem> items,
+  ) {
     final total = items.fold<int>(0, (sum, item) => sum + item.total);
     return Card(
       margin: EdgeInsets.zero,
@@ -444,7 +784,10 @@ class AdminDashboardPage extends GetView<AdminController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Komposisi Status', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Komposisi Status',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             ...items.map((item) => _biStatusRow(item, total)),
           ],
@@ -480,14 +823,20 @@ class AdminDashboardPage extends GetView<AdminController> {
     );
   }
 
-  Widget _biOfficeCard(BuildContext context, List<BusinessIntelligenceOfficeItem> items) => Card(
+  Widget _biOfficeCard(
+    BuildContext context,
+    List<BusinessIntelligenceOfficeItem> items,
+  ) => Card(
     margin: EdgeInsets.zero,
     child: Padding(
       padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Performa Kantor', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            'Performa Kantor',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 12),
           if (items.isEmpty)
             const Text('Belum ada data kantor.')
@@ -511,12 +860,20 @@ class AdminDashboardPage extends GetView<AdminController> {
       children: [
         Row(
           children: [
-            Expanded(child: Text(name, style: const TextStyle(fontWeight: FontWeight.w700))),
+            Expanded(
+              child: Text(
+                name,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
             Text('${rate.toStringAsFixed(1)}%'),
           ],
         ),
         const SizedBox(height: 4),
-        Text(subtitle, style: const TextStyle(color: AppColor.textMuted, fontSize: 12)),
+        Text(
+          subtitle,
+          style: const TextStyle(color: AppColor.textMuted, fontSize: 12),
+        ),
         const SizedBox(height: 7),
         LinearProgressIndicator(
           value: (rate / 100).clamp(0, 1),
@@ -527,23 +884,37 @@ class AdminDashboardPage extends GetView<AdminController> {
     ),
   );
 
-  Widget _biAttentionCard(BuildContext context, List<BusinessIntelligenceAttentionItem> items) => Card(
+  Widget _biAttentionCard(
+    BuildContext context,
+    List<BusinessIntelligenceAttentionItem> items,
+  ) => Card(
     margin: EdgeInsets.zero,
     child: Padding(
       padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Perlu Perhatian', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            'Perlu Perhatian',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 12),
           if (items.isEmpty)
-            const Text('Tidak ada anomali keterlambatan atau alpa pada periode ini.')
+            const Text(
+              'Tidak ada anomali keterlambatan atau alpa pada periode ini.',
+            )
           else
             ...items.map(
               (item) => ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.priority_high_rounded, color: AppColor.warning),
-                title: Text(item.nama, style: const TextStyle(fontWeight: FontWeight.w700)),
+                leading: const Icon(
+                  Icons.priority_high_rounded,
+                  color: AppColor.warning,
+                ),
+                title: Text(
+                  item.nama,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
                 subtitle: Text('${item.office} - ${item.jabatan}'),
                 trailing: Text('${item.terlambat} TL / ${item.alpa} A'),
               ),
@@ -564,7 +935,10 @@ class AdminDashboardPage extends GetView<AdminController> {
       ),
     );
     if (selected != null) {
-      await controller.setBusinessIntelligenceRange(selected.start, selected.end);
+      await controller.setBusinessIntelligenceRange(
+        selected.start,
+        selected.end,
+      );
     }
   }
 
@@ -1568,7 +1942,10 @@ class _BiTrendChart extends StatelessWidget {
       return const Center(child: Text('Tidak ada data tren.'));
     }
     return CustomPaint(
-      painter: _BiTrendPainter(items: items, maxValue: maxValue <= 0 ? 1 : maxValue),
+      painter: _BiTrendPainter(
+        items: items,
+        maxValue: maxValue <= 0 ? 1 : maxValue,
+      ),
       child: const SizedBox.expand(),
     );
   }
@@ -1642,7 +2019,10 @@ class _BiTrendPainter extends CustomPainter {
 String _titleText(String value) => value
     .replaceAll('_', ' ')
     .split(' ')
-    .map((word) => word.isEmpty ? word : '${word[0].toUpperCase()}${word.substring(1)}')
+    .map(
+      (word) =>
+          word.isEmpty ? word : '${word[0].toUpperCase()}${word.substring(1)}',
+    )
     .join(' ');
 
 Color _statusColor(String status) {
@@ -1667,12 +2047,14 @@ class _HoverNavigationTile extends StatefulWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final bool collapsed;
 
   const _HoverNavigationTile({
     required this.icon,
     required this.label,
     required this.onTap,
     this.selected = false,
+    this.collapsed = false,
   });
 
   @override
@@ -1687,22 +2069,27 @@ class _HoverNavigationTileState extends State<_HoverNavigationTile> {
     onEnter: (_) => setState(() => hovered = true),
     onExit: (_) => setState(() => hovered = false),
     cursor: SystemMouseCursors.click,
-    child: AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOut,
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-      decoration: BoxDecoration(
-        color: widget.selected
-            ? Colors.white.withValues(alpha: .18)
-            : hovered
-            ? Colors.white.withValues(alpha: .10)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: ListTile(
-        leading: Icon(widget.icon, color: Colors.white),
-        title: Text(widget.label, style: const TextStyle(color: Colors.white)),
-        onTap: widget.onTap,
+    child: Tooltip(
+      message: widget.collapsed ? widget.label : '',
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+        decoration: BoxDecoration(
+          color: widget.selected
+              ? Colors.white.withValues(alpha: .18)
+              : hovered
+              ? Colors.white.withValues(alpha: .10)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: ListTile(
+          leading: Icon(widget.icon, color: Colors.white),
+          title: widget.collapsed
+              ? null
+              : Text(widget.label, style: const TextStyle(color: Colors.white)),
+          onTap: widget.onTap,
+        ),
       ),
     ),
   );

@@ -69,7 +69,10 @@ class BusinessIntelligenceStatusItem {
   final String status;
   final int total;
 
-  const BusinessIntelligenceStatusItem({required this.status, required this.total});
+  const BusinessIntelligenceStatusItem({
+    required this.status,
+    required this.total,
+  });
 
   factory BusinessIntelligenceStatusItem.fromJson(Map<String, dynamic> json) {
     return BusinessIntelligenceStatusItem(
@@ -159,7 +162,9 @@ class BusinessIntelligenceAttentionItem {
     required this.alpa,
   });
 
-  factory BusinessIntelligenceAttentionItem.fromJson(Map<String, dynamic> json) {
+  factory BusinessIntelligenceAttentionItem.fromJson(
+    Map<String, dynamic> json,
+  ) {
     return BusinessIntelligenceAttentionItem(
       employeeId: json['employee_id'] ?? 0,
       nama: json['nama']?.toString() ?? '',

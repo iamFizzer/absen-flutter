@@ -64,6 +64,12 @@ class AttendanceController extends GetxController {
     await loadLocation();
   }
 
+  Future<void> refreshAll() async {
+    await loadAttendance();
+    await loadHistory();
+    await loadLocation();
+  }
+
   Future<void> loadHistory() async {
     try {
       history.assignAll(await AttendanceService.history());
@@ -142,20 +148,23 @@ class AttendanceController extends GetxController {
     photo.value = null;
   }
 
-  Future<void> submitAttendance() async {
+  Future<bool> submitAttendance({String? expectedAction}) async {
+    if (isUploading.value) return false;
     if (photo.value == null) {
       Get.snackbar("Peringatan", "Silakan ambil foto terlebih dahulu.");
-      return;
+      return false;
     }
 
-    if (!canSubmit || action == null) {
+    if (!canSubmit ||
+        action == null ||
+        (expectedAction != null && action != expectedAction)) {
       Get.snackbar(
         "Presensi ditolak",
         attendance.value?.checkOut != null
             ? "Presensi hari ini sudah selesai."
             : "Pastikan Anda berada di dalam radius kantor.",
       );
-      return;
+      return false;
     }
 
     isUploading.value = true;
@@ -169,17 +178,16 @@ class AttendanceController extends GetxController {
 
       if (result["success"] == true) {
         photo.value = null;
-        Get.back(result: true);
-        Get.snackbar(
-          "Berhasil",
-          '${result["message"] ?? "Presensi berhasil."} Anda kembali ke Home.',
-        );
+        await loadAttendance();
+        Get.snackbar("Berhasil", result["message"] ?? "Presensi berhasil.");
+        return true;
       } else {
         Get.snackbar(
           "Presensi gagal",
           result["message"] ?? "Silakan coba kembali.",
         );
       }
+      return false;
     } finally {
       // Spinner harus selalu berhenti, termasuk jika request melempar error.
       isUploading.value = false;

@@ -18,6 +18,11 @@ class DashboardController extends GetxController {
   }
 
   Future<void> loadDashboard() async {
+    final user = await SessionService.getUser();
+    if (user?.role == 'admin' || user?.role == 'superadmin') {
+      Get.offAllNamed(AppRoutes.adminDashboard);
+      return;
+    }
     isLoading.value = true;
     try {
       final result = await DashboardService.getDashboard();

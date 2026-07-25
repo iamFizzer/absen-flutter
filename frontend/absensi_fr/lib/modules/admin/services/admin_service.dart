@@ -13,7 +13,8 @@ class AdminService {
     'attendance_recap': '/attendance/monthly-recap/',
   };
 
-  static const businessIntelligenceEndpoint = '/dashboard/business-intelligence/';
+  static const businessIntelligenceEndpoint =
+      '/dashboard/business-intelligence/';
 
   static Future<List<Map<String, dynamic>>> list(
     String type, {
