@@ -184,7 +184,7 @@ class _LocationCard extends StatelessWidget {
   const _LocationCard({required this.controller});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => Obx(() {
     final loading = controller.isLocationLoading.value;
     final error = controller.locationError.value;
     final valid = error == null && controller.isInsideOffice.value;
@@ -249,7 +249,7 @@ class _LocationCard extends StatelessWidget {
         ),
       ),
     );
-  }
+  });
 }
 
 class _SelfieCard extends StatelessWidget {
@@ -257,7 +257,7 @@ class _SelfieCard extends StatelessWidget {
   const _SelfieCard({required this.controller});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => Obx(() {
     final photo = controller.photo.value;
     return Card(
       child: Padding(
@@ -310,7 +310,7 @@ class _SelfieCard extends StatelessWidget {
         ),
       ),
     );
-  }
+  });
 }
 
 class _SubmitArea extends StatelessWidget {
@@ -328,7 +328,7 @@ class _SubmitArea extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => Obx(() {
     final enabled =
         validAction &&
         controller.photo.value != null &&
@@ -368,7 +368,7 @@ class _SubmitArea extends StatelessWidget {
         ],
       ],
     );
-  }
+  });
 
   Future<void> _confirm(BuildContext context) async {
     final confirmed = await showDialog<bool>(
