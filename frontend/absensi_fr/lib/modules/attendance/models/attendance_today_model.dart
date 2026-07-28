@@ -41,6 +41,12 @@ class AttendanceTodayModel {
     required this.status,
   });
 
+  static String? _normalizeNullableString(dynamic value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
+
   factory AttendanceTodayModel.fromJson(Map<String, dynamic> json) {
     return AttendanceTodayModel(
       tanggal: json["tanggal"],
@@ -53,13 +59,13 @@ class AttendanceTodayModel {
 
       radius: json["radius"],
 
-      jamMasuk: json["jam_masuk"],
+      jamMasuk: _normalizeNullableString(json["jam_masuk"]),
 
-      jamPulang: json["jam_pulang"],
+      jamPulang: _normalizeNullableString(json["jam_pulang"]),
 
-      checkIn: json["check_in"],
+      checkIn: _normalizeNullableString(json["check_in"]),
 
-      checkOut: json["check_out"],
+      checkOut: _normalizeNullableString(json["check_out"]),
 
       status: json["status"],
     );

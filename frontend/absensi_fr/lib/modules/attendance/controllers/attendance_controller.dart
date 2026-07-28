@@ -13,11 +13,17 @@ import '../views/camera_capture_page.dart';
 class AttendanceController extends GetxController {
   String? get action {
     final data = attendance.value;
-    if (data == null || data.checkOut != null) return null;
-    return data.checkIn == null ? 'check_in' : 'check_out';
+    if (data == null || _hasCheckOut(data)) return null;
+    return _hasCheckIn(data) ? 'check_out' : 'check_in';
   }
 
-  String get actionLabel => action == 'check_out' ? 'CHECK OUT' : 'CHECK IN';
+  String get actionLabel => action == 'check_out' ? 'PULANG' : 'MASUK';
+
+  bool _hasCheckIn(AttendanceTodayModel data) =>
+      data.checkIn?.trim().isNotEmpty == true;
+
+  bool _hasCheckOut(AttendanceTodayModel data) =>
+      data.checkOut?.trim().isNotEmpty == true;
 
   bool get canSubmit {
     final data = attendance.value;

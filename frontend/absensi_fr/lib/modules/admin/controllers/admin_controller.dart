@@ -48,29 +48,29 @@ class AdminController extends GetxController {
       Get.offAllNamed(AppRoutes.unauthorized);
       return;
     }
-    await loadAll();
+    await loadSection(initialSection);
   }
 
-  Future<void> loadAll() async {
+  Future<void> loadAll() => loadSection(initialSection);
+
+  Future<void> loadSection(String section) async {
     isLoading.value = true;
     error.value = null;
     try {
-      final values = await Future.wait(
-        AdminService.endpoints.keys.map(AdminService.list),
-      );
-      data.assignAll(Map.fromIterables(AdminService.endpoints.keys, values));
-      if (initialSection == 'dashboard') {
+      if (section == 'dashboard') {
+        data['employees'] = await AdminService.list('employees');
         final today = DateTime.now();
         biStart.value = today;
         biEnd.value = today;
-      }
-      if (initialSection == 'dashboard' ||
-          initialSection == 'business_intelligence') {
         await loadBusinessIntelligence(showLoading: false);
+      } else if (section == 'business_intelligence') {
+        await loadBusinessIntelligence(showLoading: false);
+      } else if (AdminService.endpoints.containsKey(section)) {
+        data[section] = await AdminService.list(section);
       }
-      isLoading.value = false;
     } catch (e) {
       error.value = AdminService.errorMessage(e);
+    } finally {
       isLoading.value = false;
     }
   }

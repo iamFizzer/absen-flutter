@@ -64,7 +64,7 @@ class AdminDashboardPage extends GetView<AdminController> {
                   Expanded(
                     child: Obx(
                       () => RefreshIndicator(
-                        onRefresh: controller.loadAll,
+                        onRefresh: _refreshCurrent,
                         child: _content(context),
                       ),
                     ),
@@ -133,19 +133,17 @@ class AdminDashboardPage extends GetView<AdminController> {
           ),
           const Divider(color: Colors.white24),
           ...labels.entries.map(
-            (entry) => Obx(
-              () => _HoverNavigationTile(
-                selected: initialSection == entry.key,
-                icon: icons[entry.key]!,
-                label: entry.value,
-                collapsed: collapsed,
-                onTap: () {
-                  if (!desktop) Navigator.pop(context);
-                  if (Get.currentRoute != routes[entry.key]) {
-                    _navigateTo(entry.key);
-                  }
-                },
-              ),
+            (entry) => _HoverNavigationTile(
+              selected: initialSection == entry.key,
+              icon: icons[entry.key]!,
+              label: entry.value,
+              collapsed: collapsed,
+              onTap: () {
+                if (!desktop) Navigator.pop(context);
+                if (Get.currentRoute != routes[entry.key]) {
+                  _navigateTo(entry.key);
+                }
+              },
             ),
           ),
           const Spacer(),
@@ -201,10 +199,7 @@ class AdminDashboardPage extends GetView<AdminController> {
         ),
         const LiveClock(compact: true),
         const SizedBox(width: 8),
-        IconButton(
-          onPressed: controller.loadAll,
-          icon: const Icon(Icons.refresh),
-        ),
+        IconButton(onPressed: _refreshCurrent, icon: const Icon(Icons.refresh)),
       ],
     ),
   );
@@ -234,7 +229,7 @@ class AdminDashboardPage extends GetView<AdminController> {
                 const Text('Data tidak dapat dimuat'),
                 const SizedBox(height: 12),
                 FilledButton.icon(
-                  onPressed: controller.loadAll,
+                  onPressed: _refreshCurrent,
                   icon: const Icon(Icons.refresh),
                   label: const Text('Coba lagi'),
                 ),
@@ -533,14 +528,21 @@ class AdminDashboardPage extends GetView<AdminController> {
   Future<void> _navigateTo(String section) async {
     if (section == 'dashboard') {
       final today = DateTime.now();
-      await controller.setBusinessIntelligenceRange(today, today);
+      controller.biStart.value = today;
+      controller.biEnd.value = today;
     } else if (section == 'business_intelligence') {
-      await controller.resetBusinessIntelligenceRange();
+      controller.biStart.value = DateTime.now().subtract(
+        const Duration(days: 29),
+      );
+      controller.biEnd.value = DateTime.now();
     }
+    await controller.loadSection(section);
     if (Get.currentRoute != routes[section]) {
       await Get.toNamed(routes[section]!);
     }
   }
+
+  Future<void> _refreshCurrent() => controller.loadSection(initialSection);
 
   Widget _businessIntelligence(BuildContext context) {
     final data = controller.businessIntelligence.value;

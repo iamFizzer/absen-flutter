@@ -55,7 +55,7 @@ class AttendanceStatusCard extends StatelessWidget {
           children: [
             Expanded(
               child: _Time(
-                label: 'Check In',
+                label: 'Masuk',
                 value: attendance.checkIn ?? '--:--',
               ),
             ),
@@ -66,7 +66,7 @@ class AttendanceStatusCard extends StatelessWidget {
             ),
             Expanded(
               child: _Time(
-                label: 'Check Out',
+                label: 'Pulang',
                 value: attendance.checkOut ?? '--:--',
               ),
             ),

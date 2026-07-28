@@ -16,7 +16,7 @@ class AttendanceActionPage extends GetView<AttendanceController> {
   const AttendanceActionPage({super.key, required this.action});
 
   bool get _isCheckIn => action == AttendanceActionType.checkIn;
-  String get _label => _isCheckIn ? 'Check In' : 'Check Out';
+  String get _label => _isCheckIn ? 'Masuk' : 'Pulang';
   String get _actionValue => _isCheckIn ? 'check_in' : 'check_out';
 
   @override

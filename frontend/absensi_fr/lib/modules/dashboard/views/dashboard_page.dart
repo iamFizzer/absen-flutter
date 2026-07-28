@@ -131,7 +131,7 @@ class _TodayCard extends StatelessWidget {
     final title = complete
         ? 'Presensi selesai'
         : checkedIn
-        ? 'Saatnya check-out'
+        ? 'Saatnya Pulang'
         : 'Siap untuk presensi?';
     final subtitle = complete
         ? 'Terima kasih, aktivitas hari ini sudah tercatat.'
@@ -222,7 +222,7 @@ class _TodayCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: _TimeItem(
-                    label: 'Check-in',
+                    label: 'Masuk',
                     value: data.checkIn ?? '--:--',
                     icon: Icons.login_rounded,
                   ),
@@ -230,7 +230,7 @@ class _TodayCard extends StatelessWidget {
                 Container(width: 1, height: 54, color: AppColor.border),
                 Expanded(
                   child: _TimeItem(
-                    label: 'Check-out',
+                    label: 'Pulang',
                     value: data.checkOut ?? '--:--',
                     icon: Icons.logout_rounded,
                   ),
@@ -257,7 +257,7 @@ class _TodayCard extends StatelessWidget {
                   complete
                       ? 'PRESENSI HARI INI SELESAI'
                       : checkedIn
-                      ? 'LANJUT CHECK-OUT'
+                      ? 'LANJUT PULANG'
                       : 'MULAI PRESENSI',
                 ),
               ),

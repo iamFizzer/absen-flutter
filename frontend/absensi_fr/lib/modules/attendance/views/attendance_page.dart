@@ -60,7 +60,7 @@ class AttendancePage extends GetView<AttendanceController> {
                     builder: (context, constraints) {
                       final wide = constraints.maxWidth >= 640;
                       final checkIn = AttendanceActionCard(
-                        title: 'Check In',
+                        title: 'Masuk',
                         description: attendance.checkIn == null
                             ? 'Catat waktu kedatangan Anda.'
                             : 'Tercatat pukul ${attendance.checkIn}.',
@@ -71,11 +71,11 @@ class AttendancePage extends GetView<AttendanceController> {
                         onTap: () => _openAction(AppRoutes.checkIn),
                       );
                       final checkOut = AttendanceActionCard(
-                        title: 'Check Out',
+                        title: 'Pulang',
                         description: attendance.checkOut != null
                             ? 'Tercatat pukul ${attendance.checkOut}.'
                             : attendance.checkIn == null
-                            ? 'Tersedia setelah Anda check-in.'
+                            ? 'Tersedia setelah Anda Melakukan Presensi Masuk.'
                             : 'Catat waktu kepulangan Anda.',
                         icon: Icons.logout_rounded,
                         color: AppColor.primary,
