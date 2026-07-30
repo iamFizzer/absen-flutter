@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -1631,30 +1632,29 @@ class AdminDashboardPage extends GetView<AdminController> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setModalState) => AlertDialog(
+          scrollable: true,
           title: Text('${item == null ? 'Tambah' : 'Edit'} ${labels[type]}'),
           content: SizedBox(
             width: 520,
             child: Form(
               key: formKey,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: fields
-                      .map(
-                        (field) => Padding(
-                          padding: const EdgeInsets.only(bottom: 14),
-                          child: _formField(
-                            context,
-                            type,
-                            field,
-                            values,
-                            isEdit: item != null,
-                            refresh: setModalState,
-                          ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: fields
+                    .map(
+                      (field) => Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: _formField(
+                          context,
+                          type,
+                          field,
+                          values,
+                          isEdit: item != null,
+                          refresh: setModalState,
                         ),
-                      )
-                      .toList(),
-                ),
+                      ),
+                    )
+                    .toList(),
               ),
             ),
           ),
@@ -1790,6 +1790,7 @@ class AdminDashboardPage extends GetView<AdminController> {
     ].contains(field);
     final isLong = field == 'alamat' || field == 'keterangan';
     final isPassword = field == 'password';
+    final isCoordinate = field == 'latitude' || field == 'longitude';
     return TextFormField(
       controller: value,
       obscureText: isPassword,
@@ -1800,6 +1801,16 @@ class AdminDashboardPage extends GetView<AdminController> {
           : field == 'email'
           ? TextInputType.emailAddress
           : TextInputType.text,
+      inputFormatters: isCoordinate
+          ? [
+              TextInputFormatter.withFunction(
+                (oldValue, newValue) =>
+                    RegExp(r'^-?\d{0,3}(?:\.\d{0,6})?$').hasMatch(newValue.text)
+                    ? newValue
+                    : oldValue,
+              ),
+            ]
+          : null,
       decoration: InputDecoration(
         labelText: isPassword && isEdit
             ? 'Password baru (opsional)'
@@ -1823,6 +1834,9 @@ class AdminDashboardPage extends GetView<AdminController> {
         }
         if (isNumber && double.tryParse(text) == null) {
           return 'Masukkan angka yang valid';
+        }
+        if (isCoordinate && RegExp(r'\.\d{7,}$').hasMatch(text.trim())) {
+          return 'Maksimal 6 angka di belakang koma';
         }
         return null;
       },
@@ -1873,8 +1887,8 @@ class AdminDashboardPage extends GetView<AdminController> {
   }
 
   String? _hint(String field) => switch (field) {
-    'latitude' => 'Contoh: -6.2000000',
-    'longitude' => 'Contoh: 106.8166667',
+    'latitude' => 'Contoh: -6.200000 (maks. 6 desimal)',
+    'longitude' => 'Contoh: 106.816667 (maks. 6 desimal)',
     'radius' => 'Radius dalam meter',
     'tanggal' || 'tanggal_lahir' => 'YYYY-MM-DD',
     'jam_masuk' || 'jam_pulang' => 'HH:mm',

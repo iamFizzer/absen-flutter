@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/config/app_config.dart';
+import '../../../core/routes/app_routes.dart';
 import '../../../core/session/session_service.dart';
 import '../../../core/theme/app_color.dart';
 import '../../../core/widgets/live_clock.dart';
@@ -392,7 +393,9 @@ class _SubmitArea extends StatelessWidget {
     );
     if (confirmed != true || !context.mounted) return;
     final success = await controller.submitAttendance(expectedAction: action);
-    if (success && context.mounted) Get.back(result: true);
+    if (success && context.mounted) {
+      Get.offAllNamed(AppRoutes.dashboard);
+    }
   }
 }
 

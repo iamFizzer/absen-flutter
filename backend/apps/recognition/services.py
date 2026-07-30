@@ -104,10 +104,23 @@ class RecognitionService:
                     or "face cannot be detected" in details
                     or "no face" in details
                 )
+                multiple_faces = (
+                    "multiple face" in details
+                    or "more than one face" in details
+                )
+                image_error = (
+                    "cannot identify image file" in details
+                    or "unidentifiedimageerror" in details
+                    or "corrupt" in details
+                )
                 return {
                     "success": False,
                     "message": (
-                        "Wajah tidak dapat dideteksi. Ambil foto ulang dengan pencahayaan yang baik."
+                        "Terdeteksi lebih dari satu wajah. Pastikan hanya satu orang berada di depan kamera."
+                        if multiple_faces
+                        else "File foto rusak atau formatnya tidak didukung. Ambil foto baru."
+                        if image_error
+                        else "Wajah tidak dapat dideteksi. Pastikan wajah menghadap kamera, tidak tertutup, dan berada di dalam bingkai."
                         if detection_failed
                         else "Layanan pengenalan wajah sedang bermasalah. Silakan coba kembali."
                     )

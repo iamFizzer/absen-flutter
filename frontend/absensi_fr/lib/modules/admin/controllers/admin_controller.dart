@@ -66,7 +66,16 @@ class AdminController extends GetxController {
       } else if (section == 'business_intelligence') {
         await loadBusinessIntelligence(showLoading: false);
       } else if (AdminService.endpoints.containsKey(section)) {
-        data[section] = await AdminService.list(section);
+        if (section == 'employees') {
+          final results = await Future.wait([
+            AdminService.list('employees'),
+            AdminService.list('offices'),
+          ]);
+          data['employees'] = results[0];
+          data['offices'] = results[1];
+        } else {
+          data[section] = await AdminService.list(section);
+        }
       }
     } catch (e) {
       error.value = AdminService.errorMessage(e);
