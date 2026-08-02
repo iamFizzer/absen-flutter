@@ -19,8 +19,8 @@ class AdminDashboardPage extends GetView<AdminController> {
     'dashboard': 'Dashboard Admin',
     'business_intelligence': 'Dashboard BI',
     'shifts': 'Shift',
-    'offices': 'Lokasi Absensi',
-    'attendance_recap': 'Rekap Absensi',
+    'offices': 'Lokasi Presensi',
+    'attendance_recap': 'Rekap Presensi',
     'employees': 'Data Pegawai',
     'holidays': 'Hari Libur',
   };
@@ -267,6 +267,10 @@ class AdminDashboardPage extends GetView<AdminController> {
               )
               .toList(),
         ),
+        if (type == 'holidays') ...[
+          const SizedBox(height: 24),
+          _holidayApprovals(context),
+        ],
         const SizedBox(height: 24),
         Row(
           children: [
@@ -324,8 +328,8 @@ class AdminDashboardPage extends GetView<AdminController> {
         .length;
     final shortcuts = [
       ('employees', 'Data Pegawai', Icons.people_outline),
-      ('attendance_recap', 'Rekap Absensi', Icons.fact_check_outlined),
-      ('offices', 'Lokasi Absensi', Icons.location_on_outlined),
+      ('attendance_recap', 'Rekap Presensi', Icons.fact_check_outlined),
+      ('offices', 'Lokasi Presensi', Icons.location_on_outlined),
       ('business_intelligence', 'Dashboard BI', Icons.insights_outlined),
     ];
 
@@ -971,7 +975,7 @@ class AdminDashboardPage extends GetView<AdminController> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Rekap Absensi',
+                  'Rekap Presensi',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 Text(
@@ -1285,6 +1289,148 @@ class AdminDashboardPage extends GetView<AdminController> {
     ),
   );
 
+  Widget _holidayApprovals(BuildContext context) {
+    final approvals = controller.data['holiday_approvals'] ?? const [];
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.approval_outlined, color: AppColor.primary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Approval Presensi Hari Libur',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+                Chip(label: Text('${approvals.length} menunggu')),
+              ],
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Presensi baru masuk ke rekap setelah disetujui admin.',
+            ),
+            const SizedBox(height: 14),
+            if (approvals.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Text('Tidak ada presensi yang menunggu approval.'),
+              )
+            else
+              ...approvals.map(
+                (item) => Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColor.border),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item['employee_name']?.toString() ?? '-',
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${item['employee_nip'] ?? '-'} • ${item['tanggal'] ?? '-'} • Masuk ${item['jam_masuk'] ?? '-'}',
+                      ),
+                      Text(
+                        '${item['office_name'] ?? '-'} • Jarak ${item['jarak'] ?? '-'} meter • Skor wajah ${item['face_score'] ?? '-'}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          FilledButton.icon(
+                            onPressed: () => _decideHolidayAttendance(
+                              context,
+                              item,
+                              'approved',
+                            ),
+                            icon: const Icon(Icons.check_circle_outline),
+                            label: const Text('Setujui'),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: () => _decideHolidayAttendance(
+                              context,
+                              item,
+                              'rejected',
+                            ),
+                            icon: const Icon(Icons.cancel_outlined),
+                            label: const Text('Tolak'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _decideHolidayAttendance(
+    BuildContext context,
+    Map<String, dynamic> item,
+    String decision,
+  ) async {
+    final note = TextEditingController();
+    final approved = decision == 'approved';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(approved ? 'Setujui presensi?' : 'Tolak presensi?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${item['employee_name'] ?? '-'} • ${item['tanggal'] ?? '-'}',
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: note,
+              maxLines: 3,
+              decoration: InputDecoration(
+                labelText: approved
+                    ? 'Catatan approval (opsional)'
+                    : 'Alasan penolakan',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(approved ? 'Setujui' : 'Tolak'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await controller.decideHolidayAttendance(
+        item['id'] as int,
+        decision,
+        note: note.text.trim(),
+      );
+    }
+    note.dispose();
+  }
+
   Widget _item(BuildContext context, String type, Map<String, dynamic> item) {
     final title = item['nama']?.toString() ?? item['nip']?.toString() ?? '-';
     final subtitle = type == 'employees'
@@ -1293,6 +1439,8 @@ class AdminDashboardPage extends GetView<AdminController> {
         ? item['alamat']?.toString()
         : type == 'shifts'
         ? '${item['jam_masuk']} – ${item['jam_pulang']}'
+        : type == 'holidays'
+        ? '${item['tanggal']} • ${item['jenis'] == 'cuti_bersama' ? 'Cuti Bersama' : 'Hari Libur'} • ${item['boleh_presensi'] == true ? 'Presensi dibuka' : 'Presensi ditutup'}'
         : item['tanggal']?.toString();
     final faceImage = item['face_image']?.toString();
     final hasFace = type == 'employees' && item['face_registered'] == true;
@@ -1627,6 +1775,11 @@ class AdminDashboardPage extends GetView<AdminController> {
       }
       if (type == 'offices') values['status']?.text = 'true';
       if (type == 'shifts') values['aktif']?.text = 'true';
+      if (type == 'holidays') {
+        values['jenis']?.text = 'hari_libur';
+        values['boleh_presensi']?.text = 'false';
+        values['toleransi_menit']?.text = '15';
+      }
     }
     await showDialog(
       context: context,
@@ -1695,7 +1848,16 @@ class AdminDashboardPage extends GetView<AdminController> {
       'status',
     ],
     'shifts' => ['nama', 'jam_masuk', 'jam_pulang', 'toleransi_menit', 'aktif'],
-    'holidays' => ['nama', 'tanggal', 'keterangan'],
+    'holidays' => [
+      'nama',
+      'tanggal',
+      'jenis',
+      'boleh_presensi',
+      'jam_masuk',
+      'jam_pulang',
+      'toleransi_menit',
+      'keterangan',
+    ],
     'employees' => [
       if (!isEdit) 'username',
       if (!isEdit) 'password',
@@ -1737,6 +1899,17 @@ class AdminDashboardPage extends GetView<AdminController> {
         onChanged: (selected) => value.text = selected ?? 'L',
       );
     }
+    if (field == 'jenis' && type == 'holidays') {
+      return DropdownButtonFormField<String>(
+        initialValue: value.text,
+        decoration: const InputDecoration(labelText: 'Jenis Hari'),
+        items: const [
+          DropdownMenuItem(value: 'hari_libur', child: Text('Hari Libur')),
+          DropdownMenuItem(value: 'cuti_bersama', child: Text('Cuti Bersama')),
+        ],
+        onChanged: (selected) => value.text = selected ?? 'hari_libur',
+      );
+    }
     if (field == 'office') {
       final offices = controller.data['offices'] ?? [];
       final selected = int.tryParse(value.text);
@@ -1768,14 +1941,23 @@ class AdminDashboardPage extends GetView<AdminController> {
         onChanged: (selected) => value.text = selected ?? 'aktif',
       );
     }
-    if (field == 'status' || field == 'aktif') {
+    if (field == 'status' || field == 'aktif' || field == 'boleh_presensi') {
       return DropdownButtonFormField<String>(
         initialValue: value.text.toLowerCase(),
-        decoration: InputDecoration(labelText: _fieldLabel(field)),
-        items: const [
-          DropdownMenuItem(value: 'true', child: Text('Aktif')),
-          DropdownMenuItem(value: 'false', child: Text('Nonaktif')),
-        ],
+        decoration: InputDecoration(
+          labelText: field == 'boleh_presensi'
+              ? 'Izinkan Presensi'
+              : _fieldLabel(field),
+        ),
+        items: field == 'boleh_presensi'
+            ? const [
+                DropdownMenuItem(value: 'true', child: Text('Ya, dibuka')),
+                DropdownMenuItem(value: 'false', child: Text('Tidak, ditutup')),
+              ]
+            : const [
+                DropdownMenuItem(value: 'true', child: Text('Aktif')),
+                DropdownMenuItem(value: 'false', child: Text('Nonaktif')),
+              ],
         onChanged: (selected) => value.text = selected ?? 'true',
       );
     }
@@ -1825,7 +2007,12 @@ class AdminDashboardPage extends GetView<AdminController> {
       validator: (text) {
         if (isPassword && isEdit && (text == null || text.isEmpty)) return null;
         if (text == null || text.trim().isEmpty) {
-          if (field == 'keterangan') return null;
+          if (field == 'keterangan' ||
+              ((field == 'jam_masuk' || field == 'jam_pulang') &&
+                  type == 'holidays' &&
+                  values['boleh_presensi']?.text != 'true')) {
+            return null;
+          }
           return '${_fieldLabel(field)} wajib diisi';
         }
         if (isPassword && text.length < 6) return 'Password minimal 6 karakter';
@@ -1896,12 +2083,19 @@ class AdminDashboardPage extends GetView<AdminController> {
   };
 
   dynamic _convert(String type, String field, String value) {
+    if (type == 'holidays' &&
+        (field == 'jam_masuk' || field == 'jam_pulang') &&
+        value.trim().isEmpty) {
+      return null;
+    }
     if (['radius', 'toleransi_menit'].contains(field)) {
       return int.tryParse(value) ?? 0;
     }
     if (field == 'office') return int.tryParse(value);
     if (['latitude', 'longitude'].contains(field)) return value;
-    if (field == 'aktif' || (field == 'status' && type == 'offices')) {
+    if (field == 'aktif' ||
+        field == 'boleh_presensi' ||
+        (field == 'status' && type == 'offices')) {
       return !['false', '0', 'tidak', 'nonaktif'].contains(value.toLowerCase());
     }
     return value;

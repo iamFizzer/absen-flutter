@@ -45,6 +45,23 @@ class AttendancePage extends GetView<AttendanceController> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   AttendanceStatusCard(attendance: attendance),
+                  if (!attendance.presensiDibuka &&
+                      attendance.checkIn == null) ...[
+                    const SizedBox(height: 14),
+                    Card(
+                      color: AppColor.warning.withValues(alpha: .1),
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.event_busy_outlined,
+                          color: AppColor.warning,
+                        ),
+                        title: const Text('Presensi hari ini ditutup'),
+                        subtitle: Text(
+                          attendance.informasiHari ?? 'Bukan hari kerja.',
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 20),
                   Text(
                     'Pilih aktivitas',
@@ -66,7 +83,9 @@ class AttendancePage extends GetView<AttendanceController> {
                             : 'Tercatat pukul ${attendance.checkIn}.',
                         icon: Icons.login_rounded,
                         color: AppColor.success,
-                        enabled: attendance.checkIn == null,
+                        enabled:
+                            attendance.presensiDibuka &&
+                            attendance.checkIn == null,
                         completed: attendance.checkIn != null,
                         onTap: () => _openAction(AppRoutes.checkIn),
                       );

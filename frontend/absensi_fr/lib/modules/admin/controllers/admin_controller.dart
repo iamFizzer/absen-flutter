@@ -73,6 +73,13 @@ class AdminController extends GetxController {
           ]);
           data['employees'] = results[0];
           data['offices'] = results[1];
+        } else if (section == 'holidays') {
+          final results = await Future.wait([
+            AdminService.list('holidays'),
+            AdminService.holidayApprovals(),
+          ]);
+          data['holidays'] = results[0];
+          data['holiday_approvals'] = results[1];
         } else {
           data[section] = await AdminService.list(section);
         }
@@ -115,13 +122,37 @@ class AdminController extends GetxController {
     }
   }
 
+  Future<bool> decideHolidayAttendance(
+    int attendanceId,
+    String decision, {
+    String note = '',
+  }) async {
+    try {
+      final message = await AdminService.decideHolidayAttendance(
+        attendanceId,
+        decision,
+        note: note,
+      );
+      data['holiday_approvals'] = await AdminService.holidayApprovals();
+      Get.snackbar(
+        decision == 'approved' ? 'Presensi disetujui' : 'Presensi ditolak',
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return true;
+    } catch (e) {
+      Get.snackbar('Approval gagal', AdminService.errorMessage(e));
+      return false;
+    }
+  }
+
   Future<void> uploadEmployeeFace(int employeeId, XFile image) async {
     try {
       await AdminService.uploadEmployeeFace(employeeId, image);
       data['employees'] = await AdminService.list('employees');
       Get.snackbar(
         'Foto tersimpan',
-        'Foto identifikasi siap digunakan saat absensi.',
+        'Foto identifikasi siap digunakan saat presensi.',
       );
     } catch (e) {
       Get.snackbar('Foto gagal disimpan', AdminService.errorMessage(e));

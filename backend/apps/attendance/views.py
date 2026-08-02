@@ -5,13 +5,17 @@ from django.utils import timezone
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
 
 from .services import AttendanceError, AttendanceService
+from .models import Attendance
 from apps.common.exports import excel_response, pdf_response
 from .serializers import (
     AttendanceHistorySerializer,
     AttendanceSubmitSerializer,
     AttendanceTodaySerializer,
+    HolidayAttendanceApprovalSerializer,
+    HolidayAttendanceDecisionSerializer,
 )
 
 
@@ -147,11 +151,66 @@ class AttendanceRecapExportView(APIView):
              item["izin"], item["sakit"], item["cuti"], item["alpa"]]
             for item in recap
         ]
-        filename = f"rekap-absensi-{start}-{end}"
-        title = f"Rekap Absensi {start:%d/%m/%Y} - {end:%d/%m/%Y}"
+        filename = f"rekap-presensi-{start}-{end}"
+        title = f"Rekap Presensi {start:%d/%m/%Y} - {end:%d/%m/%Y}"
         if request.query_params.get("format", "xlsx").lower() == "pdf":
             return pdf_response(filename, title, headers, rows)
-        return excel_response(filename, "Rekap Absensi", headers, rows)
+        return excel_response(filename, "Rekap Presensi", headers, rows)
+
+
+class HolidayAttendanceApprovalListView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        status_filter = request.query_params.get("status", "pending")
+        queryset = Attendance.objects.filter(
+            holiday_approval_status__in=("pending", "approved", "rejected")
+        ).select_related("employee", "office", "holiday_approved_by")
+        if status_filter in ("pending", "approved", "rejected"):
+            queryset = queryset.filter(holiday_approval_status=status_filter)
+        queryset = queryset.order_by("-tanggal", "-created_at")
+        serializer = HolidayAttendanceApprovalSerializer(
+            queryset,
+            many=True,
+            context={"request": request},
+        )
+        return Response({"success": True, "data": serializer.data})
+
+
+class HolidayAttendanceApprovalDecisionView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, attendance_id):
+        serializer = HolidayAttendanceDecisionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        attendance = get_object_or_404(
+            Attendance,
+            id=attendance_id,
+            holiday_approval_status__in=("pending", "approved", "rejected"),
+        )
+        attendance.holiday_approval_status = serializer.validated_data["decision"]
+        attendance.holiday_approval_note = serializer.validated_data.get("note", "")
+        attendance.holiday_approved_by = request.user
+        attendance.holiday_approved_at = timezone.now()
+        attendance.save(update_fields=[
+            "holiday_approval_status",
+            "holiday_approval_note",
+            "holiday_approved_by",
+            "holiday_approved_at",
+            "updated_at",
+        ])
+        return Response({
+            "success": True,
+            "message": (
+                "Presensi hari libur disetujui dan masuk ke rekap."
+                if attendance.holiday_approval_status == "approved"
+                else "Presensi hari libur ditolak dan tidak masuk ke rekap."
+            ),
+            "data": HolidayAttendanceApprovalSerializer(
+                attendance,
+                context={"request": request},
+            ).data,
+        })
 
 
 def _query_int(request, key):

@@ -2,9 +2,17 @@ from django.db import models
 
 from apps.employees.models import Employee
 from apps.offices.models import Office
+from django.conf import settings
 
 
 class Attendance(models.Model):
+
+    HOLIDAY_APPROVAL_STATUS = (
+        ("not_required", "Tidak Diperlukan"),
+        ("pending", "Menunggu Approval"),
+        ("approved", "Disetujui"),
+        ("rejected", "Ditolak"),
+    )
 
     STATUS = (
         ("hadir", "Hadir"),
@@ -66,6 +74,24 @@ class Attendance(models.Model):
         blank=True,
         null=True
     )
+
+    holiday_approval_status = models.CharField(
+        max_length=20,
+        choices=HOLIDAY_APPROVAL_STATUS,
+        default="not_required",
+    )
+
+    holiday_approval_note = models.TextField(blank=True, null=True)
+
+    holiday_approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="approved_holiday_attendances",
+    )
+
+    holiday_approved_at = models.DateTimeField(blank=True, null=True)
 
     created_at = models.DateTimeField(
         auto_now_add=True

@@ -6,6 +6,8 @@ from .views import (
     AttendanceRecapExportView,
     AttendanceSubmitView,
     AttendanceTodayView,
+    HolidayAttendanceApprovalDecisionView,
+    HolidayAttendanceApprovalListView,
 )
 
 urlpatterns = [
@@ -36,6 +38,16 @@ urlpatterns = [
         "recap/export/",
         AttendanceRecapExportView.as_view(),
         name="attendance-recap-export",
+    ),
+    path(
+        "holiday-approvals/",
+        HolidayAttendanceApprovalListView.as_view(),
+        name="holiday-attendance-approvals",
+    ),
+    path(
+        "holiday-approvals/<int:attendance_id>/decision/",
+        HolidayAttendanceApprovalDecisionView.as_view(),
+        name="holiday-attendance-approval-decision",
     ),
 
 ]

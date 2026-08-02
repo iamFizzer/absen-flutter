@@ -19,6 +19,12 @@ class AttendanceTodayModel {
 
   final String status;
 
+  final bool presensiDibuka;
+
+  final String jenisHari;
+
+  final String? informasiHari;
+
   const AttendanceTodayModel({
     required this.tanggal,
 
@@ -39,6 +45,12 @@ class AttendanceTodayModel {
     this.checkOut,
 
     required this.status,
+
+    required this.presensiDibuka,
+
+    required this.jenisHari,
+
+    this.informasiHari,
   });
 
   static String? _normalizeNullableString(dynamic value) {
@@ -68,6 +80,12 @@ class AttendanceTodayModel {
       checkOut: _normalizeNullableString(json["check_out"]),
 
       status: json["status"],
+
+      presensiDibuka: json["presensi_dibuka"] ?? true,
+
+      jenisHari: json["jenis_hari"] ?? "hari_kerja",
+
+      informasiHari: _normalizeNullableString(json["informasi_hari"]),
     );
   }
 }

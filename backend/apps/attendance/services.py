@@ -22,6 +22,37 @@ class AttendanceService:
     AUTO_CHECKOUT_TIME = time(23, 59)
 
     @staticmethod
+    def work_schedule(day):
+        holiday = Holiday.objects.filter(tanggal=day).first()
+        shift = Shift.objects.filter(aktif=True).order_by("jam_masuk").first()
+        if holiday is not None:
+            return {
+                "is_open": holiday.boleh_presensi,
+                "day_type": holiday.jenis,
+                "message": holiday.nama,
+                "start": holiday.jam_masuk if holiday.boleh_presensi else None,
+                "end": holiday.jam_pulang if holiday.boleh_presensi else None,
+                "tolerance": holiday.toleransi_menit,
+            }
+        if day.weekday() >= 5:
+            return {
+                "is_open": False,
+                "day_type": "akhir_pekan",
+                "message": "Akhir pekan",
+                "start": None,
+                "end": None,
+                "tolerance": 0,
+            }
+        return {
+            "is_open": True,
+            "day_type": "hari_kerja",
+            "message": None,
+            "start": shift.jam_masuk if shift else None,
+            "end": shift.jam_pulang if shift else None,
+            "tolerance": shift.toleransi_menit if shift else 0,
+        }
+
+    @staticmethod
     def finalize_previous_days(employee=None):
         queryset = Attendance.objects.filter(
             tanggal__lt=timezone.localdate(),
@@ -49,14 +80,17 @@ class AttendanceService:
 
         AttendanceService.finalize_previous_days(employee)
 
+        today = timezone.localdate()
         attendance = Attendance.objects.filter(
             employee=employee,
-            tanggal=timezone.localdate()
+            tanggal=today
         ).first()
+
+        schedule = AttendanceService.work_schedule(today)
 
         return {
 
-            "tanggal": timezone.localdate(),
+            "tanggal": today,
 
             "office": employee.office.nama,
 
@@ -66,15 +100,21 @@ class AttendanceService:
 
             "radius": employee.office.radius,
 
-            "jam_masuk": attendance.jam_masuk if attendance else None,
+            "jam_masuk": schedule["start"],
 
-            "jam_pulang": attendance.jam_pulang if attendance else None,
+            "jam_pulang": schedule["end"],
 
             "check_in": attendance.jam_masuk if attendance else None,
 
             "check_out": attendance.jam_pulang if attendance else None,
 
-            "status": attendance.status if attendance else "belum_checkin",
+            "status": AttendanceService.display_status(attendance),
+
+            "presensi_dibuka": schedule["is_open"],
+
+            "jenis_hari": schedule["day_type"],
+
+            "informasi_hari": schedule["message"],
 
         }
 
@@ -91,6 +131,7 @@ class AttendanceService:
             raise AttendanceError("Data karyawan aktif tidak ditemukan.")
 
         today = timezone.localdate()
+        schedule = AttendanceService.work_schedule(today)
         attendance = (
             Attendance.objects.select_for_update()
             .filter(employee=employee, tanggal=today)
@@ -98,6 +139,10 @@ class AttendanceService:
         )
         if action == "check_in" and attendance is not None:
             raise AttendanceError("Anda sudah check-in hari ini.")
+        if action == "check_in" and not schedule["is_open"]:
+            raise AttendanceError(
+                f"Hari ini {schedule['message']}. Presensi tidak dibuka."
+            )
         if action == "check_out" and attendance is None:
             raise AttendanceError("Anda belum check-in hari ini.")
         if action == "check_out" and attendance.jam_pulang is not None:
@@ -126,12 +171,11 @@ class AttendanceService:
         current_time = timezone.localtime().time().replace(microsecond=0)
 
         if action == "check_in":
-            shift = Shift.objects.filter(aktif=True).order_by("jam_masuk").first()
             status = "hadir"
-            if shift:
+            if schedule["start"]:
                 deadline = (
-                    datetime.combine(today, shift.jam_masuk)
-                    + timedelta(minutes=shift.toleransi_menit)
+                    datetime.combine(today, schedule["start"])
+                    + timedelta(minutes=schedule["tolerance"])
                 ).time()
                 if current_time > deadline:
                     status = "terlambat"
@@ -147,9 +191,18 @@ class AttendanceService:
                 selfie=selfie,
                 face_score=face_result.get("confidence", 0),
                 status=status,
+                holiday_approval_status=(
+                    "pending"
+                    if schedule["day_type"] in ("hari_libur", "cuti_bersama")
+                    else "not_required"
+                ),
             )
             action = "check_in"
-            message = "Check-in berhasil."
+            message = (
+                "Presensi hari libur berhasil dikirim dan menunggu approval admin."
+                if attendance.holiday_approval_status == "pending"
+                else "Check-in berhasil."
+            )
         else:
             attendance.jam_pulang = current_time
             attendance.face_score = face_result.get("confidence", attendance.face_score)
@@ -163,6 +216,16 @@ class AttendanceService:
             "face_score": face_result.get("confidence", 0),
             "attendance": AttendanceService.today(user),
         }
+
+    @staticmethod
+    def display_status(attendance):
+        if attendance is None:
+            return "belum_checkin"
+        if attendance.holiday_approval_status == "pending":
+            return "menunggu_approval"
+        if attendance.holiday_approval_status == "rejected":
+            return "ditolak"
+        return attendance.status
 
     @staticmethod
     def history(user, year=None, month=None):
@@ -203,8 +266,12 @@ class AttendanceService:
                     "tanggal": current,
                     "check_in": record.jam_masuk,
                     "check_out": record.jam_pulang,
-                    "status": record.status,
-                    "catatan": record.catatan,
+                    "status": AttendanceService.display_status(record),
+                    "catatan": (
+                        record.holiday_approval_note
+                        if record.holiday_approval_status == "rejected"
+                        else record.catatan
+                    ),
                 })
             elif is_workday:
                 result.append({
@@ -303,7 +370,7 @@ class AttendanceService:
         while current <= end:
             record = records.get(current)
             if record is not None:
-                result.append({"status": record.status})
+                result.append({"status": AttendanceService.display_status(record)})
             elif current.weekday() < 5 and current not in holidays:
                 result.append({
                     "status": "belum_checkin" if current == today else "alpa"

@@ -16,6 +16,8 @@ class AdminService {
   static const businessIntelligenceEndpoint =
       '/dashboard/business-intelligence/';
 
+  static const holidayApprovalsEndpoint = '/attendance/holiday-approvals/';
+
   static Future<List<Map<String, dynamic>>> list(
     String type, {
     Map<String, dynamic>? queryParameters,
@@ -67,6 +69,27 @@ class AdminService {
     );
   }
 
+  static Future<List<Map<String, dynamic>>> holidayApprovals() async {
+    final response = await ApiClient.dio.get(holidayApprovalsEndpoint);
+    final raw = response.data is Map ? response.data['data'] : response.data;
+    return (raw as List)
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+  }
+
+  static Future<String> decideHolidayAttendance(
+    int attendanceId,
+    String decision, {
+    String note = '',
+  }) async {
+    final response = await ApiClient.dio.post(
+      '$holidayApprovalsEndpoint$attendanceId/decision/',
+      data: {'decision': decision, 'note': note},
+    );
+    return response.data['message']?.toString() ??
+        'Status approval berhasil diperbarui.';
+  }
+
   static Future<void> exportEmployees(String format) async {
     await _download('/employees/export/', 'data-pegawai.$format', format);
   }
@@ -80,7 +103,7 @@ class AdminService {
     final endText = dateText(end);
     await _download(
       '/attendance/recap/export/',
-      'rekap-absensi-$startText-$endText.$format',
+      'rekap-presensi-$startText-$endText.$format',
       format,
       queryParameters: {'start_date': startText, 'end_date': endText},
     );
