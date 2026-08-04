@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import logging
 
+from django.db import transaction
 from django.utils import timezone
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
@@ -8,7 +9,9 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 
 from .services import AttendanceError, AttendanceService
-from .models import Attendance
+from .models import Attendance, LeaveRequest
+from apps.employees.models import Employee
+from apps.master.models import Holiday
 from apps.common.exports import excel_response, pdf_response
 from .serializers import (
     AttendanceHistorySerializer,
@@ -16,6 +19,8 @@ from .serializers import (
     AttendanceTodaySerializer,
     HolidayAttendanceApprovalSerializer,
     HolidayAttendanceDecisionSerializer,
+    LeaveDecisionSerializer,
+    LeaveRequestSerializer,
 )
 
 
@@ -211,6 +216,106 @@ class HolidayAttendanceApprovalDecisionView(APIView):
                 context={"request": request},
             ).data,
         })
+
+
+class LeaveRequestListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.is_staff:
+            queryset = LeaveRequest.objects.select_related("employee", "decided_by")
+            status_filter = request.query_params.get("status")
+            if status_filter in ("pending", "approved", "rejected", "cancelled"):
+                queryset = queryset.filter(status=status_filter)
+        else:
+            queryset = LeaveRequest.objects.filter(employee__user=request.user).select_related("employee", "decided_by")
+        return Response({"success": True, "data": LeaveRequestSerializer(queryset, many=True, context={"request": request}).data})
+
+    def post(self, request):
+        employee = Employee.objects.filter(user=request.user, status="aktif").first()
+        if employee is None:
+            return Response({"success": False, "message": "Data pegawai aktif tidak ditemukan."}, status=403)
+        serializer = LeaveRequestSerializer(data=request.data, context={"request": request, "employee": employee})
+        serializer.is_valid(raise_exception=True)
+        leave_request = serializer.save(employee=employee)
+        return Response({
+            "success": True,
+            "message": "Pengajuan berhasil dikirim dan menunggu persetujuan admin.",
+            "data": LeaveRequestSerializer(leave_request, context={"request": request}).data,
+        }, status=201)
+
+
+class LeaveRequestDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, request_id):
+        leave_request = get_object_or_404(LeaveRequest, id=request_id, employee__user=request.user)
+        if leave_request.status != "pending":
+            return Response({"success": False, "message": "Hanya pengajuan yang masih menunggu yang dapat dibatalkan."}, status=400)
+        leave_request.status = "cancelled"
+        leave_request.save(update_fields=["status", "updated_at"])
+        return Response({"success": True, "message": "Pengajuan berhasil dibatalkan."})
+
+
+class LeaveRequestDecisionView(APIView):
+    permission_classes = [IsAdminUser]
+
+    @transaction.atomic
+    def post(self, request, request_id):
+        serializer = LeaveDecisionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        leave_request = get_object_or_404(
+            LeaveRequest.objects.select_for_update().select_related("employee__office"),
+            id=request_id,
+        )
+        if leave_request.status != "pending":
+            return Response({"success": False, "message": "Pengajuan ini sudah diproses."}, status=400)
+
+        decision = serializer.validated_data["decision"]
+        if decision == "approved":
+            dates = _leave_work_dates(leave_request.start_date, leave_request.end_date)
+            if not dates:
+                return Response({"success": False, "message": "Rentang pengajuan tidak memiliki hari kerja yang dapat dicatat."}, status=400)
+            conflicts = Attendance.objects.filter(employee=leave_request.employee, tanggal__in=dates)
+            if conflicts.exists():
+                return Response({"success": False, "message": "Tidak dapat menyetujui karena sudah ada presensi pada salah satu tanggal pengajuan."}, status=400)
+            office = leave_request.employee.office
+            Attendance.objects.bulk_create([
+                Attendance(
+                    employee=leave_request.employee,
+                    office=office,
+                    tanggal=day,
+                    latitude=office.latitude,
+                    longitude=office.longitude,
+                    jarak=0,
+                    selfie="",
+                    status=leave_request.type,
+                    catatan=leave_request.reason,
+                )
+                for day in dates
+            ])
+
+        leave_request.status = decision
+        leave_request.decision_note = serializer.validated_data.get("note", "").strip()
+        leave_request.decided_by = request.user
+        leave_request.decided_at = timezone.now()
+        leave_request.save(update_fields=["status", "decision_note", "decided_by", "decided_at", "updated_at"])
+        return Response({
+            "success": True,
+            "message": "Pengajuan disetujui dan rekap kehadiran diperbarui." if decision == "approved" else "Pengajuan ditolak.",
+            "data": LeaveRequestSerializer(leave_request, context={"request": request}).data,
+        })
+
+
+def _leave_work_dates(start, end):
+    holidays = set(Holiday.objects.filter(tanggal__range=(start, end)).values_list("tanggal", flat=True))
+    dates = []
+    current = start
+    while current <= end:
+        if current.weekday() < 5 and current not in holidays:
+            dates.append(current)
+        current += timedelta(days=1)
+    return dates
 
 
 def _query_int(request, key):

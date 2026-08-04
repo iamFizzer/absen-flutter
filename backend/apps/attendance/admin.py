@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Attendance
+from .models import Attendance, LeaveRequest
 
 
 @admin.register(Attendance)
@@ -38,3 +38,10 @@ class AttendanceAdmin(admin.ModelAdmin):
         "-tanggal",
         "-jam_masuk",
     )
+
+
+@admin.register(LeaveRequest)
+class LeaveRequestAdmin(admin.ModelAdmin):
+    list_display = ("employee", "type", "start_date", "end_date", "status")
+    list_filter = ("type", "status", "start_date")
+    search_fields = ("employee__nama", "employee__nip", "reason")

@@ -17,6 +17,7 @@ class AdminService {
       '/dashboard/business-intelligence/';
 
   static const holidayApprovalsEndpoint = '/attendance/holiday-approvals/';
+  static const leaveRequestsEndpoint = '/attendance/leave-requests/';
 
   static Future<List<Map<String, dynamic>>> list(
     String type, {
@@ -88,6 +89,26 @@ class AdminService {
     );
     return response.data['message']?.toString() ??
         'Status approval berhasil diperbarui.';
+  }
+
+  static Future<List<Map<String, dynamic>>> leaveRequests() async {
+    final response = await ApiClient.dio.get(leaveRequestsEndpoint);
+    return (response.data['data'] as List)
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+  }
+
+  static Future<String> decideLeaveRequest(
+    int id,
+    String decision, {
+    String note = '',
+  }) async {
+    final response = await ApiClient.dio.post(
+      '$leaveRequestsEndpoint$id/decision/',
+      data: {'decision': decision, 'note': note},
+    );
+    return response.data['message']?.toString() ??
+        'Pengajuan berhasil diproses.';
   }
 
   static Future<void> exportEmployees(String format) async {

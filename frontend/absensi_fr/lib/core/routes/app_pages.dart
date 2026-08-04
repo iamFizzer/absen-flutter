@@ -12,6 +12,8 @@ import '../../modules/attendance/bindings/attendance_binding.dart';
 import '../../modules/attendance/views/attendance_page.dart';
 import '../../modules/attendance/views/check_in_page.dart';
 import '../../modules/attendance/views/check_out_page.dart';
+import '../../modules/leave/bindings/leave_binding.dart';
+import '../../modules/leave/views/leave_request_page.dart';
 import '../../modules/admin/bindings/admin_binding.dart';
 import '../../modules/admin/views/admin_dashboard_page.dart';
 import '../../modules/admin/views/unauthorized_page.dart';
@@ -52,6 +54,11 @@ class AppPages {
     GetPage(name: AppRoutes.checkIn, page: () => const CheckInPage()),
     GetPage(name: AppRoutes.checkOut, page: () => const CheckOutPage()),
     GetPage(
+      name: AppRoutes.leaveRequests,
+      page: () => const LeaveRequestPage(),
+      binding: LeaveBinding(),
+    ),
+    GetPage(
       name: AppRoutes.adminDashboard,
       page: () => const AdminDashboardPage(),
       binding: AdminBinding(initialSection: 'dashboard'),
@@ -86,6 +93,11 @@ class AppPages {
       name: AppRoutes.adminAttendanceRecap,
       page: () => const AdminDashboardPage(initialSection: 'attendance_recap'),
       binding: AdminBinding(initialSection: 'attendance_recap'),
+    ),
+    GetPage(
+      name: AppRoutes.adminLeaveRequests,
+      page: () => const AdminDashboardPage(initialSection: 'leave_requests'),
+      binding: AdminBinding(initialSection: 'leave_requests'),
     ),
     GetPage(name: AppRoutes.unauthorized, page: () => const UnauthorizedPage()),
   ];

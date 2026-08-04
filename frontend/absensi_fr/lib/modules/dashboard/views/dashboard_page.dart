@@ -72,6 +72,16 @@ class DashboardPage extends GetView<DashboardController> {
                                 _Summary(data: data),
                               ],
                               const SizedBox(height: 24),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: () =>
+                                      Get.toNamed(AppRoutes.leaveRequests),
+                                  icon: const Icon(Icons.event_note_outlined),
+                                  label: const Text('PENGAJUAN CUTI / IZIN'),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
                               _MonthlyHistory(data: data),
                             ],
                           ),
@@ -126,14 +136,19 @@ class _TodayCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final complete = data.status == 'selesai';
+    final isLeave = const {'cuti', 'izin', 'sakit'}.contains(data.status);
+    final complete = data.status == 'selesai' || isLeave;
     final checkedIn = data.checkIn != null;
-    final title = complete
+    final title = isLeave
+        ? 'Pengajuan ${data.status} disetujui'
+        : complete
         ? 'Presensi selesai'
         : checkedIn
         ? 'Saatnya Pulang'
         : 'Siap untuk presensi?';
-    final subtitle = complete
+    final subtitle = isLeave
+        ? 'Anda tidak perlu melakukan presensi hari ini.'
+        : complete
         ? 'Terima kasih, aktivitas hari ini sudah tercatat.'
         : 'Pastikan wajah terlihat jelas dan GPS perangkat aktif.';
 
@@ -254,7 +269,9 @@ class _TodayCard extends StatelessWidget {
                       : Icons.face_retouching_natural,
                 ),
                 label: Text(
-                  complete
+                  isLeave
+                      ? '${data.status.toUpperCase()} DISETUJUI'
+                      : complete
                       ? 'PRESENSI HARI INI SELESAI'
                       : checkedIn
                       ? 'LANJUT PULANG'

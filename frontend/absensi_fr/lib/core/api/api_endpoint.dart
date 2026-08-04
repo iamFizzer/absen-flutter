@@ -15,6 +15,8 @@ class ApiEndpoint {
 
   static const attendanceHistory = "attendance/history/";
 
+  static const leaveRequests = "/attendance/leave-requests/";
+
   static const employee = "/employees/";
 
   static const office = "/offices/";

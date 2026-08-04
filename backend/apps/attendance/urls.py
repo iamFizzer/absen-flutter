@@ -8,6 +8,9 @@ from .views import (
     AttendanceTodayView,
     HolidayAttendanceApprovalDecisionView,
     HolidayAttendanceApprovalListView,
+    LeaveRequestDecisionView,
+    LeaveRequestDetailView,
+    LeaveRequestListCreateView,
 )
 
 urlpatterns = [
@@ -49,5 +52,8 @@ urlpatterns = [
         HolidayAttendanceApprovalDecisionView.as_view(),
         name="holiday-attendance-approval-decision",
     ),
+    path("leave-requests/", LeaveRequestListCreateView.as_view(), name="leave-requests"),
+    path("leave-requests/<int:request_id>/", LeaveRequestDetailView.as_view(), name="leave-request-detail"),
+    path("leave-requests/<int:request_id>/decision/", LeaveRequestDecisionView.as_view(), name="leave-request-decision"),
 
 ]

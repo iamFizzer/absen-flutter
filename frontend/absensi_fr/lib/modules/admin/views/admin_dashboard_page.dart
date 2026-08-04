@@ -23,6 +23,7 @@ class AdminDashboardPage extends GetView<AdminController> {
     'attendance_recap': 'Rekap Presensi',
     'employees': 'Data Pegawai',
     'holidays': 'Hari Libur',
+    'leave_requests': 'Pengajuan Pegawai',
   };
   static const icons = {
     'dashboard': Icons.dashboard_outlined,
@@ -32,6 +33,7 @@ class AdminDashboardPage extends GetView<AdminController> {
     'offices': Icons.business_outlined,
     'shifts': Icons.schedule_outlined,
     'holidays': Icons.event_outlined,
+    'leave_requests': Icons.event_available_outlined,
   };
   static const routes = {
     'dashboard': AppRoutes.adminDashboard,
@@ -41,6 +43,7 @@ class AdminDashboardPage extends GetView<AdminController> {
     'offices': AppRoutes.adminOffices,
     'shifts': AppRoutes.adminShifts,
     'holidays': AppRoutes.adminHolidays,
+    'leave_requests': AppRoutes.adminLeaveRequests,
   };
 
   @override
@@ -250,6 +253,9 @@ class AdminDashboardPage extends GetView<AdminController> {
     final items = controller.data[type] ?? [];
     if (type == 'attendance_recap') {
       return _attendanceRecap(context, items);
+    }
+    if (type == 'leave_requests') {
+      return _leaveRequests(context, items);
     }
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -1311,9 +1317,7 @@ class AdminDashboardPage extends GetView<AdminController> {
               ],
             ),
             const SizedBox(height: 6),
-            const Text(
-              'Presensi baru masuk ke rekap setelah disetujui admin.',
-            ),
+            const Text('Presensi baru masuk ke rekap setelah disetujui admin.'),
             const SizedBox(height: 14),
             if (approvals.isEmpty)
               const Padding(
@@ -1379,6 +1383,174 @@ class AdminDashboardPage extends GetView<AdminController> {
     );
   }
 
+  Widget _leaveRequests(
+    BuildContext context,
+    List<Map<String, dynamic>> items,
+  ) {
+    final pending = items.where((item) => item['status'] == 'pending').length;
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Pengajuan Cuti & Izin',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            Chip(label: Text('$pending menunggu')),
+          ],
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Setujui atau tolak pengajuan pegawai. Pengajuan yang disetujui otomatis masuk ke rekap presensi.',
+        ),
+        const SizedBox(height: 18),
+        if (items.isEmpty)
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(child: Text('Belum ada pengajuan pegawai.')),
+            ),
+          )
+        else
+          ...items.map((item) {
+            final status = item['status']?.toString() ?? '';
+            final color = status == 'approved'
+                ? AppColor.success
+                : status == 'rejected' || status == 'cancelled'
+                ? AppColor.danger
+                : AppColor.warning;
+            return Card(
+              margin: const EdgeInsets.only(bottom: 10),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item['employee_name']?.toString() ?? '-',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        Chip(
+                          label: Text(
+                            item['status_label']?.toString() ?? status,
+                          ),
+                          backgroundColor: color.withValues(alpha: .12),
+                          labelStyle: TextStyle(color: color),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      '${item['employee_nip'] ?? '-'} • ${item['type_label'] ?? '-'}',
+                    ),
+                    Text(
+                      '${item['start_date'] ?? '-'} sampai ${item['end_date'] ?? '-'}',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(item['reason']?.toString() ?? '-'),
+                    if ((item['decision_note']?.toString() ?? '')
+                        .isNotEmpty) ...[
+                      const Divider(),
+                      Text('Catatan: ${item['decision_note']}'),
+                    ],
+                    if (status == 'pending') ...[
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          FilledButton.icon(
+                            onPressed: () =>
+                                _decideLeave(context, item, 'approved'),
+                            icon: const Icon(Icons.check),
+                            label: const Text('Setujui'),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: () =>
+                                _decideLeave(context, item, 'rejected'),
+                            icon: const Icon(Icons.close),
+                            label: const Text('Tolak'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          }),
+      ],
+    );
+  }
+
+  Future<void> _decideLeave(
+    BuildContext context,
+    Map<String, dynamic> item,
+    String decision,
+  ) async {
+    final note = TextEditingController();
+    final rejected = decision == 'rejected';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        scrollable: true,
+        title: Text(rejected ? 'Tolak pengajuan?' : 'Setujui pengajuan?'),
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${item['employee_name']} • ${item['type_label']}'),
+            const SizedBox(height: 14),
+            TextField(
+              controller: note,
+              maxLines: 3,
+              decoration: InputDecoration(
+                labelText: rejected
+                    ? 'Alasan penolakan (wajib)'
+                    : 'Catatan (opsional)',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (rejected && note.text.trim().isEmpty) {
+                Get.snackbar(
+                  'Alasan wajib diisi',
+                  'Tuliskan alasan penolakan untuk pegawai.',
+                );
+                return;
+              }
+              Navigator.pop(dialogContext, true);
+            },
+            child: Text(rejected ? 'Tolak' : 'Setujui'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await controller.decideLeaveRequest(
+        item['id'] as int,
+        decision,
+        note: note.text.trim(),
+      );
+    }
+    note.dispose();
+  }
+
   Future<void> _decideHolidayAttendance(
     BuildContext context,
     Map<String, dynamic> item,
@@ -1394,9 +1566,7 @@ class AdminDashboardPage extends GetView<AdminController> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '${item['employee_name'] ?? '-'} • ${item['tanggal'] ?? '-'}',
-            ),
+            Text('${item['employee_name'] ?? '-'} • ${item['tanggal'] ?? '-'}'),
             const SizedBox(height: 14),
             TextField(
               controller: note,

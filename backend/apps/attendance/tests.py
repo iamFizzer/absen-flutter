@@ -1,7 +1,8 @@
-from datetime import date, time
+from datetime import date, time, timedelta
 
 from django.test import SimpleTestCase, TestCase
 from django.contrib.auth.models import User
+from django.utils import timezone
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from apps.common.utils.geolocation import GeoLocation
@@ -9,9 +10,12 @@ from apps.attendance.serializers import AttendanceSubmitSerializer
 from apps.attendance.services import AttendanceService
 from apps.master.models import Holiday, Shift
 from apps.attendance.models import Attendance
+from apps.attendance.models import LeaveRequest
 from apps.attendance.views import (
     HolidayAttendanceApprovalDecisionView,
     HolidayAttendanceApprovalListView,
+    LeaveRequestDecisionView,
+    LeaveRequestListCreateView,
 )
 from apps.employees.models import Employee
 from apps.offices.models import Office
@@ -199,5 +203,70 @@ class HolidayAttendanceApprovalTests(TestCase):
         response = HolidayAttendanceApprovalListView.as_view()(request)
 
         self.assertEqual(response.status_code, 403)
+
+
+class LeaveRequestTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user("leave-admin", password="secret", is_staff=True)
+        self.user = User.objects.create_user("leave-employee", password="secret")
+        self.other_user = User.objects.create_user("other-employee", password="secret")
+        self.office = Office.objects.create(
+            nama="Kantor Cuti", alamat="Alamat", latitude="-6.2000000",
+            longitude="106.8166667", radius=100,
+        )
+        self.employee = Employee.objects.create(
+            user=self.user, nip="CUTI-001", nama="Pegawai Cuti", jenis_kelamin="L",
+            tanggal_lahir=date(1990, 1, 1), alamat="Alamat", telepon="0812",
+            email="cuti@example.com", jabatan="Tester", office=self.office,
+        )
+        self.other_employee = Employee.objects.create(
+            user=self.other_user, nip="CUTI-002", nama="Pegawai Lain", jenis_kelamin="P",
+            tanggal_lahir=date(1991, 1, 1), alamat="Alamat", telepon="0813",
+            email="lain@example.com", jabatan="Tester", office=self.office,
+        )
+        self.factory = APIRequestFactory()
+
+    def test_employee_can_submit_and_only_sees_own_requests(self):
+        start = timezone.localdate() + timedelta(days=7)
+        end = start + timedelta(days=1)
+        request = self.factory.post(
+            "/api/v1/attendance/leave-requests/",
+            {"type": "cuti", "start_date": start.isoformat(), "end_date": end.isoformat(), "reason": "Keperluan keluarga"},
+            format="json",
+        )
+        force_authenticate(request, user=self.user)
+        with self.settings(USE_TZ=True):
+            response = LeaveRequestListCreateView.as_view()(request)
+        self.assertEqual(response.status_code, 201)
+
+        LeaveRequest.objects.create(
+            employee=self.other_employee, type="izin", start_date=end + timedelta(days=1),
+            end_date=end + timedelta(days=1), reason="Keperluan lain",
+        )
+        list_request = self.factory.get("/api/v1/attendance/leave-requests/")
+        force_authenticate(list_request, user=self.user)
+        list_response = LeaveRequestListCreateView.as_view()(list_request)
+        self.assertEqual(len(list_response.data["data"]), 1)
+
+    def test_admin_approval_creates_attendance_for_workdays(self):
+        leave_request = LeaveRequest.objects.create(
+            employee=self.employee, type="cuti", start_date=date(2026, 8, 10),
+            end_date=date(2026, 8, 11), reason="Keperluan keluarga",
+        )
+        request = self.factory.post("/decision/", {"decision": "approved"}, format="json")
+        force_authenticate(request, user=self.admin)
+        response = LeaveRequestDecisionView.as_view()(request, request_id=leave_request.id)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Attendance.objects.filter(employee=self.employee, status="cuti").count(), 2)
+
+    def test_rejection_requires_note(self):
+        leave_request = LeaveRequest.objects.create(
+            employee=self.employee, type="izin", start_date=date(2026, 8, 10),
+            end_date=date(2026, 8, 10), reason="Keperluan",
+        )
+        request = self.factory.post("/decision/", {"decision": "rejected", "note": ""}, format="json")
+        force_authenticate(request, user=self.admin)
+        response = LeaveRequestDecisionView.as_view()(request, request_id=leave_request.id)
+        self.assertEqual(response.status_code, 400)
 
 # Create your tests here.

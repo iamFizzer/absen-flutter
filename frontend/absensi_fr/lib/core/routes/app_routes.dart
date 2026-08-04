@@ -11,6 +11,8 @@ abstract class AppRoutes {
 
   static const checkOut = "/attendance/check-out";
 
+  static const leaveRequests = "/pengajuan-cuti";
+
   static const adminDashboard = "/admin-dashboard";
 
   static const businessIntelligence = "/dashboard-bi";
@@ -24,6 +26,8 @@ abstract class AppRoutes {
   static const adminHolidays = "/hari-libur";
 
   static const adminAttendanceRecap = "/rekap-absensi";
+
+  static const adminLeaveRequests = "/pengajuan-pegawai";
 
   static const unauthorized = "/unauthorized";
 }

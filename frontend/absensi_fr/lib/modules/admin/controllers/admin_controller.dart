@@ -65,6 +65,8 @@ class AdminController extends GetxController {
         await loadBusinessIntelligence(showLoading: false);
       } else if (section == 'business_intelligence') {
         await loadBusinessIntelligence(showLoading: false);
+      } else if (section == 'leave_requests') {
+        data['leave_requests'] = await AdminService.leaveRequests();
       } else if (AdminService.endpoints.containsKey(section)) {
         if (section == 'employees') {
           final results = await Future.wait([
@@ -142,6 +144,30 @@ class AdminController extends GetxController {
       return true;
     } catch (e) {
       Get.snackbar('Approval gagal', AdminService.errorMessage(e));
+      return false;
+    }
+  }
+
+  Future<bool> decideLeaveRequest(
+    int id,
+    String decision, {
+    String note = '',
+  }) async {
+    try {
+      final message = await AdminService.decideLeaveRequest(
+        id,
+        decision,
+        note: note,
+      );
+      data['leave_requests'] = await AdminService.leaveRequests();
+      Get.snackbar(
+        decision == 'approved' ? 'Pengajuan disetujui' : 'Pengajuan ditolak',
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return true;
+    } catch (e) {
+      Get.snackbar('Pengajuan gagal diproses', AdminService.errorMessage(e));
       return false;
     }
   }
