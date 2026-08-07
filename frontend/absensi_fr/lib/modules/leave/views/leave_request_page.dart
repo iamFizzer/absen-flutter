@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_color.dart';
@@ -62,7 +62,7 @@ class LeaveRequestPage extends GetView<LeaveController> {
     var type = 'cuti';
     var start = DateTime.now();
     var end = DateTime.now();
-    XFile? attachment;
+    PlatformFile? attachment;
     final reason = TextEditingController();
     final formKey = GlobalKey<FormState>();
     final submitted = await showDialog<bool>(
@@ -135,20 +135,41 @@ class LeaveRequestPage extends GetView<LeaveController> {
                 const SizedBox(height: 14),
                 OutlinedButton.icon(
                   onPressed: () async {
-                    final image = await ImagePicker().pickImage(
-                      source: ImageSource.gallery,
-                      imageQuality: 85,
+                    final result = await FilePicker.platform.pickFiles(
+                      type: FileType.custom,
+                      allowedExtensions: const ['pdf'],
+                      withData: true,
                     );
-                    if (image != null) setState(() => attachment = image);
+                    final document = result?.files.single;
+                    if (document == null) return;
+                    if (document.size > 5 * 1024 * 1024) {
+                      Get.snackbar(
+                        'Lampiran terlalu besar',
+                        'Ukuran dokumen PDF maksimal 5 MB.',
+                        snackPosition: SnackPosition.BOTTOM,
+                      );
+                      return;
+                    }
+                    if (document.bytes == null) {
+                      Get.snackbar(
+                        'Lampiran gagal dibaca',
+                        'Silakan pilih kembali dokumen PDF.',
+                        snackPosition: SnackPosition.BOTTOM,
+                      );
+                      return;
+                    }
+                    setState(() => attachment = document);
                   },
-                  icon: const Icon(Icons.attach_file),
-                  label: Text(attachment?.name ?? 'Lampirkan foto (opsional)'),
+                  icon: const Icon(Icons.picture_as_pdf_outlined),
+                  label: Text(
+                    attachment?.name ?? 'Lampirkan dokumen PDF (opsional)',
+                  ),
                 ),
                 if (type == 'sakit')
                   const Padding(
                     padding: EdgeInsets.only(top: 6),
                     child: Text(
-                      'Lampirkan foto surat dokter bila tersedia.',
+                      'Lampirkan surat dokter dalam format PDF bila tersedia.',
                       style: TextStyle(fontSize: 12),
                     ),
                   ),

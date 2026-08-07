@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../models/leave_request_model.dart';
 import '../services/leave_service.dart';
@@ -34,7 +34,7 @@ class LeaveController extends GetxController {
     DateTime start,
     DateTime end,
     String reason,
-    XFile? attachment,
+    PlatformFile? attachment,
   ) async {
     isSubmitting.value = true;
     try {

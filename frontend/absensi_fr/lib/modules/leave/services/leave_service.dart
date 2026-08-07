@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoint.dart';
@@ -21,7 +21,7 @@ class LeaveService {
     required DateTime startDate,
     required DateTime endDate,
     required String reason,
-    XFile? attachment,
+    PlatformFile? attachment,
   }) async {
     final form = FormData.fromMap({
       'type': type,
@@ -30,8 +30,9 @@ class LeaveService {
       'reason': reason,
       if (attachment != null)
         'attachment': MultipartFile.fromBytes(
-          await attachment.readAsBytes(),
+          attachment.bytes!,
           filename: attachment.name,
+          contentType: DioMediaType('application', 'pdf'),
         ),
     });
     final response = await ApiClient.dio.post(

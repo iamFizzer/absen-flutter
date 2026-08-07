@@ -137,8 +137,10 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
         if value.size > 5 * 1024 * 1024:
             raise serializers.ValidationError("Ukuran lampiran maksimal 5 MB.")
         extension = value.name.rsplit(".", 1)[-1].lower() if "." in value.name else ""
-        if extension not in ("jpg", "jpeg", "png", "pdf"):
-            raise serializers.ValidationError("Lampiran harus berupa JPG, PNG, atau PDF.")
+        header = value.read(5)
+        value.seek(0)
+        if extension != "pdf" or header != b"%PDF-":
+            raise serializers.ValidationError("Lampiran harus berupa dokumen PDF yang valid.")
         return value
 
 

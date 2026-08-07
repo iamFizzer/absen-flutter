@@ -1,5 +1,6 @@
 from datetime import date, time, timedelta
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import SimpleTestCase, TestCase
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -247,6 +248,55 @@ class LeaveRequestTests(TestCase):
         force_authenticate(list_request, user=self.user)
         list_response = LeaveRequestListCreateView.as_view()(list_request)
         self.assertEqual(len(list_response.data["data"]), 1)
+
+    def test_employee_can_attach_pdf_document(self):
+        start = timezone.localdate() + timedelta(days=7)
+        document = SimpleUploadedFile(
+            "surat-cuti.pdf",
+            b"%PDF-1.4\n% test document",
+            content_type="application/pdf",
+        )
+        request = self.factory.post(
+            "/api/v1/attendance/leave-requests/",
+            {
+                "type": "cuti",
+                "start_date": start.isoformat(),
+                "end_date": start.isoformat(),
+                "reason": "Keperluan keluarga",
+                "attachment": document,
+            },
+            format="multipart",
+        )
+        force_authenticate(request, user=self.user)
+        response = LeaveRequestListCreateView.as_view()(request)
+
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(LeaveRequest.objects.get().attachment.name.endswith(".pdf"))
+
+    def test_employee_cannot_attach_image_or_fake_pdf(self):
+        start = timezone.localdate() + timedelta(days=7)
+        for filename, content in (
+            ("surat-cuti.jpg", b"\xff\xd8\xff image"),
+            ("surat-cuti.pdf", b"not a pdf"),
+        ):
+            with self.subTest(filename=filename, content=content):
+                document = SimpleUploadedFile(filename, content)
+                request = self.factory.post(
+                    "/api/v1/attendance/leave-requests/",
+                    {
+                        "type": "cuti",
+                        "start_date": start.isoformat(),
+                        "end_date": start.isoformat(),
+                        "reason": "Keperluan keluarga",
+                        "attachment": document,
+                    },
+                    format="multipart",
+                )
+                force_authenticate(request, user=self.user)
+                response = LeaveRequestListCreateView.as_view()(request)
+
+                self.assertEqual(response.status_code, 400)
+                self.assertIn("PDF", str(response.data))
 
     def test_admin_approval_creates_attendance_for_workdays(self):
         leave_request = LeaveRequest.objects.create(
