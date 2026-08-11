@@ -8,6 +8,7 @@ class LeaveRequestModel {
   final String status;
   final String statusLabel;
   final String decisionNote;
+  final String attachmentUrl;
 
   const LeaveRequestModel({
     required this.id,
@@ -19,6 +20,7 @@ class LeaveRequestModel {
     required this.status,
     required this.statusLabel,
     required this.decisionNote,
+    required this.attachmentUrl,
   });
 
   factory LeaveRequestModel.fromJson(Map<String, dynamic> json) =>
@@ -32,5 +34,6 @@ class LeaveRequestModel {
         status: json['status']?.toString() ?? '',
         statusLabel: json['status_label']?.toString() ?? '',
         decisionNote: json['decision_note']?.toString() ?? '',
+        attachmentUrl: json['attachment_url']?.toString() ?? '',
       );
 }

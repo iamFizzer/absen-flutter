@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_color.dart';
+import '../../../core/utils/attachment_launcher.dart';
 import '../controllers/leave_controller.dart';
 import '../models/leave_request_model.dart';
 
@@ -276,6 +277,14 @@ class _RequestCard extends StatelessWidget {
             Text(dates, style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Text(item.reason),
+            if (item.attachmentUrl.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () => openAttachment(item.attachmentUrl),
+                icon: const Icon(Icons.picture_as_pdf_outlined),
+                label: const Text('Lihat Lampiran'),
+              ),
+            ],
             if (item.decisionNote.isNotEmpty) ...[
               const Divider(height: 24),
               Text('Catatan admin: ${item.decisionNote}'),

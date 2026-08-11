@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/session/session_service.dart';
 import '../../../core/theme/app_color.dart';
+import '../../../core/utils/attachment_launcher.dart';
 import '../../../core/widgets/live_clock.dart';
 import '../controllers/admin_controller.dart';
 import '../models/business_intelligence_model.dart';
@@ -1458,6 +1459,16 @@ class AdminDashboardPage extends GetView<AdminController> {
                     ),
                     const SizedBox(height: 8),
                     Text(item['reason']?.toString() ?? '-'),
+                    if ((item['attachment_url']?.toString() ?? '')
+                        .isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: () =>
+                            openAttachment(item['attachment_url'].toString()),
+                        icon: const Icon(Icons.picture_as_pdf_outlined),
+                        label: const Text('Lihat Lampiran'),
+                      ),
+                    ],
                     if ((item['decision_note']?.toString() ?? '')
                         .isNotEmpty) ...[
                       const Divider(),
